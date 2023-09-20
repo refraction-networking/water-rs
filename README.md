@@ -1,4 +1,5 @@
-# WASMable Transport: Yet another more Pluggable Pluggable Transport
+# W.A.T.E.R.: WebAssembly Transport Executable Reactor -- Rust
+WASMable Transport: Yet another more Pluggable Pluggable Transport
 > Here is the [repo](https://github.com/erikziyunchi/wasm_proxy) contains all the PoC examples, and this framework is the conprehensive result after all the research.
 
 The repo will contain 2 parts of purposes:
