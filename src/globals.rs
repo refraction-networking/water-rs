@@ -5,12 +5,11 @@ const ALLOC_FN: &str = "alloc";
 const MEMORY: &str = "memory";
 const DEALLOC_FN: &str = "dealloc";
 
-// const ARRAY_SUM_FN: &str = "array_sum";
-pub const UPPER_FN: &str = "upper";
-pub const LOWER_FN: &str = "lower";
-pub const REVERSE_FN: &str = "reverse";
 pub const MAIN: &str = "main";
 pub const VERSION_FN: &str = "_version";
 pub const INIT_FN: &str = "_init";
+pub const USER_READ_FN: &str = "_user_will_read";
+pub const WRITE_DONE_FN: &str = "_user_write_done";
+
 pub const RUNTIME_VERSION_MAJOR: i32 = 0x001aaaaa;
 pub const RUNTIME_VERSION: &str = "v0.1-alpha";

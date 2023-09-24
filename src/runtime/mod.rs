@@ -20,7 +20,7 @@ use crate::Config;
 use net::{File, FileName, ListenFile, ConnectFile};
 use funcs::{export_tcplistener_create};
 
-use crate::globals::{VERSION_FN, RUNTIME_VERSION_MAJOR, RUNTIME_VERSION, INIT_FN};
+use crate::globals::{VERSION_FN, RUNTIME_VERSION_MAJOR, RUNTIME_VERSION, INIT_FN, USER_READ_FN, WRITE_DONE_FN};
 
 pub struct WATERStreamConnector {
     pub config: Config,
@@ -39,18 +39,18 @@ impl WATERStreamConnector {
         self.debug = debug;
     }
 
-    pub fn connect_context(&mut self) -> Result<WATERStream<Host>, anyhow::Error> {
+    // TODO: add a parameter for target address
+    pub fn connect(&mut self) -> Result<WATERStream<Host>, anyhow::Error> {
         let mut runtime = WATERStream::init(&self.config)?;
 
         // NOTE: After creating the WATERStream, do some initial calls to WASM (e.g. version, init, etc.)
         runtime._version()?;
         runtime._init()?;
 
-        // runtime.connect(conf)?;
+        runtime.connect(&self.config)?;
         Ok(runtime)
     }
 }
-
 
 #[derive(Default, Clone)]
 pub struct Host {
@@ -58,10 +58,12 @@ pub struct Host {
     wasi_threads: Option<Arc<WasiThreadsCtx<Host>>>,
 }
 
+pub trait WATERStreamOps {
+    fn user_write_done(&mut self, n: i32) -> Result<i32, anyhow::Error>;
+    fn user_will_read(&mut self) -> Result<i32, anyhow::Error>;
+}
+
 pub struct WATERStream<Host> {
-    
-
-
     pub engine: Engine,
     pub linker: Linker<Host>,
     pub instance: Instance,
@@ -72,16 +74,14 @@ pub struct WATERStream<Host> {
 impl WATERStream<Host> {
     pub fn connect(&mut self, conf: &Config) -> Result<(), anyhow::Error>  {
         let fnc = self.instance.get_func(&mut self.store, &conf.entry_fn).unwrap();
-
-        fnc.call(&mut self.store, &[], &mut []);
-
+        match fnc.call(&mut self.store, &[], &mut []) {
+            Ok(_) => {},
+            Err(e) => return Err(anyhow::Error::msg(format!("connect function failed: {}", e))),
+        }
+        
         Ok(())
     }
-
-    // pub fn linkDialFuns() {
-
-    // }
-
+    
     pub fn init(conf: &Config) -> Result<Self, anyhow::Error> {
         
         let mut wasm_config = wasmtime::Config::new();
@@ -115,11 +115,11 @@ impl WATERStream<Host> {
             })?;
         }
         
-        // export functions
+        // export functions -- link connect functions
         export_tcplistener_create(&mut linker);
         
         let instance = linker.instantiate(&mut store, &module)?;
-        
+
         let runtime = WATERStream { 
             engine: engine,
             linker: linker,
@@ -136,31 +136,79 @@ impl WATERStream<Host> {
             Some(func) => func,
             None => return Err(anyhow::Error::msg("version function not found")),
         };
+
+        let mut res = vec![Val::I32(0); version_fn.ty(&self.store).results().len()];
         
-        let mut res = &mut [ Val::I32(0) ];
-        version_fn.call(&mut self.store, &[], res)?;
+        // TODO: add error handling code like this for all other func.call()'s
+        match version_fn.call(&mut self.store, &[], &mut res) {
+            Ok(_) => {},
+            Err(e) => return Err(anyhow::Error::msg(format!("version function failed: {}", e))),
+        }
         
-        match res[0] {
-            wasmtime::Val::I32(v) => { 
-                if v != RUNTIME_VERSION_MAJOR { 
-                    return Err(anyhow::Error::msg(format!("WASI module version {} is not compatible with runtime version {}", v, RUNTIME_VERSION))); 
+        match res.get(0) {
+            Some(wasmtime::Val::I32(v)) => {
+                if *v != RUNTIME_VERSION_MAJOR {
+                    return Err(anyhow::Error::msg(format!("WASI module version {} is not compatible with runtime version {}", v, RUNTIME_VERSION)));
                 }
             },
-            _ => return Err(anyhow::Error::msg("version function returned unexpected type")),
+            Some(_) => return Err(anyhow::Error::msg("version function returned unexpected type")),
+            None => return Err(anyhow::Error::msg("version function has no return")),
         };
 
         Ok(())
     }
 
     pub fn _init(&mut self) -> Result<(), anyhow::Error> {
-        let version_fn = match self.instance.get_func(&mut self.store, INIT_FN) {
+        let init_fn = match self.instance.get_func(&mut self.store, INIT_FN) {
             Some(func) => func,
             None => return Err(anyhow::Error::msg("init function not found")),
         };
 
         // TODO: check if we need to pass in any arguments / configs later
-        version_fn.call(&mut self.store, &[], &mut [])?;
+        init_fn.call(&mut self.store, &[], &mut [])?;
 
         Ok(())
+    }
+}
+
+impl WATERStreamOps for WATERStream<Host> {
+    fn user_write_done(&mut self, n: i32) -> Result<i32, anyhow::Error> {
+        let user_write_done_fn = match self.instance.get_func(&mut self.store, WRITE_DONE_FN) {
+            Some(func) => func,
+            None => return Err(anyhow::Error::msg("user_write_done function not found")),
+        };
+
+        let mut res = vec![Val::I32(0); user_write_done_fn.ty(&self.store).results().len()];
+        match user_write_done_fn.call(&mut self.store, &[Val::I32(n)], &mut res) {
+            Ok(_) => {},
+            Err(e) => return Err(anyhow::Error::msg(format!("user_write_done function failed: {}", e))),
+        }
+
+        match res.get(0) {
+            Some(wasmtime::Val::I32(v)) => {
+                return Ok(*v);
+            },
+            _ => return Err(anyhow::Error::msg("user_write_done function returned unexpected type / no return")),
+        };
+    }
+
+    fn user_will_read(&mut self) -> Result<i32, anyhow::Error> {
+        let user_will_read_fn = match self.instance.get_func(&mut self.store, USER_READ_FN) {
+            Some(func) => func,
+            None => return Err(anyhow::Error::msg("user_will_read function not found")),
+        };
+
+        let mut res = vec![Val::I32(0); user_will_read_fn.ty(&self.store).results().len()];
+        match user_will_read_fn.call(&mut self.store, &[], &mut res) {
+            Ok(_) => {},
+            Err(e) => return Err(anyhow::Error::msg(format!("user_will_read function failed: {}", e))),
+        }
+
+        match res.get(0) {
+            Some(wasmtime::Val::I32(v)) => {
+                return Ok(*v);
+            },
+            _ => return Err(anyhow::Error::msg("user_will_read function returned unexpected type / no return")),
+        };
     }
 }
