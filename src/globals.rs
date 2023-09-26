@@ -8,6 +8,7 @@ const DEALLOC_FN: &str = "dealloc";
 pub const MAIN: &str = "main";
 pub const VERSION_FN: &str = "_version";
 pub const INIT_FN: &str = "_init";
+pub const CONFIG_FN: &str = "_process_config";
 pub const USER_READ_FN: &str = "_user_will_read";
 pub const WRITE_DONE_FN: &str = "_user_write_done";
 

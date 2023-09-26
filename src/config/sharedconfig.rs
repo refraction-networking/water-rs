@@ -1,4 +1,5 @@
 use std::mem;
+use serde::{Serialize, Deserialize};
 
 #[repr(C)]
 pub struct WASMSharedConfig {
@@ -27,4 +28,23 @@ impl WASMSharedConfig {
     //     let struct_ref = unsafe { Box::from_raw(ptr) };
     //     Some(*struct_ref)
     // }
+}
+
+#[derive(Serialize, Deserialize)]
+#[repr(C)]
+pub struct StreamConfig {
+    pub addr: String,
+    pub port: u32,
+    pub name: String,
+}
+
+impl StreamConfig {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let size = mem::size_of::<StreamConfig>();
+        let ptr = self as *const Self;
+        
+        let bytes_slice = unsafe { std::slice::from_raw_parts(ptr as *const u8, size) };
+        let bytes = bytes_slice.to_vec();
+        bytes
+    }
 }

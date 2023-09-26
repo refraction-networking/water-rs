@@ -1,4 +1,6 @@
 use crate::runtime::*;
+use crate::sharedconfig::StreamConfig;
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
 // Generically link dial functions
 // pub fn linkDialFuns(linker: &mut Linker<Host>) {
@@ -17,8 +19,10 @@ use crate::runtime::*;
 //     }
 // }
 
-pub fn export_tcplistener_create(linker: &mut Linker<Host>) {
-    linker.func_wrap("env", "create_listen", move |mut caller: Caller<'_, Host>, ptr: u32, size: u32| -> i32{
+pub fn export_tcp_connect(linker: &mut Linker<Host>) {
+    linker.func_wrap("env", "connect_tcp", move |mut caller: Caller<'_, Host>, ptr: u32, size: u32, fd: u32| -> i32{
+
+        info!("[WASM] invoking Host exported Dial func connect_tcp...");
         
         let memory = match caller.get_export("memory") {
             Some(Extern::Memory(memory)) => memory,
@@ -29,19 +33,79 @@ pub fn export_tcplistener_create(linker: &mut Linker<Host>) {
         let mem_slice = memory.data_mut(&mut caller);
 
         // Use the offset and size to get the relevant part of the memory.
-        // TODO: use data here to get the filename, ip:port for creating config
         let data = &mut mem_slice[ptr as usize..(ptr as usize + size as usize)];
-        // println!("Data: {:?}", data);
+        
+        let mut config: StreamConfig;
+        unsafe {
+            config = bincode::deserialize(&data).expect("Failed to deserialize");
+        }
 
-        // FIXME: currently hardcoded config here
-        let test_file = File::Listen(ListenFile::Tcp {
-            name: "LISTEN".try_into().unwrap(),
-            port: 9005,
-            addr: "127.0.0.1".into()
+        let connect_file = File::Connect(ConnectFile::Tcp {
+            name: Some(config.name.clone().try_into().unwrap()),
+            port: config.port as u16,
+            host: config.addr.clone().into()
         });
 
         // Get the pair here addr:port
-        let (addr, port) = match test_file {
+        let (host, port) = match connect_file {
+            File::Connect(listen_file) => match listen_file {
+                ConnectFile::Tcp { host, port, .. } | ConnectFile::Tls { host, port, .. } => (host, port),
+            },
+            _ => { ("Wrong".into(), 0) }
+        };
+
+        let tcp = match (host.as_str(), port) {
+            ("localhost", port) => std::net::TcpStream::connect(SocketAddr::V4(SocketAddrV4::new(
+                Ipv4Addr::LOCALHOST,
+                port,
+            ))),
+            addr => std::net::TcpStream::connect(addr),
+        }
+        .map(TcpStream::from_std)
+        .context("failed to connect to endpoint").unwrap();
+    
+        // Connecting Tcp
+        let socket_file: Box<dyn WasiFile>  = wasmtime_wasi::net::Socket::from(tcp).into();
+        
+        let socket_fd: usize = (fd).try_into().unwrap();
+
+        // Get the WasiCtx of the caller(WASM), then insert_file into it
+        let mut ctx: &mut WasiCtx = caller.data_mut().preview1_ctx.as_mut().unwrap();
+        ctx.insert_file(socket_fd as u32, socket_file, FileAccessMode::all());
+
+        socket_fd as i32
+    }).unwrap();
+}
+
+pub fn export_tcplistener_create(linker: &mut Linker<Host>) {
+    linker.func_wrap("env", "create_listen", move |mut caller: Caller<'_, Host>, ptr: u32, size: u32, fd: u32| -> i32{
+
+        info!("[WASM] invoking Host exported Dial func create_tcp_listener...");
+        
+        let memory = match caller.get_export("memory") {
+            Some(Extern::Memory(memory)) => memory,
+            _ => return -1,
+        };
+
+        // Get a slice of the memory.
+        let mem_slice = memory.data_mut(&mut caller);
+
+        // Use the offset and size to get the relevant part of the memory.
+        let data = &mut mem_slice[ptr as usize..(ptr as usize + size as usize)];
+        
+        let mut config: StreamConfig;
+        unsafe {
+            config = bincode::deserialize(&data).expect("Failed to deserialize");
+        }
+
+        let listener_file = File::Listen(ListenFile::Tcp {
+            name: config.name.clone().try_into().unwrap(),
+            port: config.port as u16,
+            addr: config.addr.clone().into()
+        });
+
+        // Get the pair here addr:port
+        let (addr, port) = match listener_file {
             File::Listen(listen_file) => match listen_file {
                 ListenFile::Tcp { addr, port, .. } | ListenFile::Tls { addr, port, .. } => (addr, port),
             },
@@ -53,11 +117,8 @@ pub fn export_tcplistener_create(linker: &mut Linker<Host>) {
         let tcp = TcpListener::from_std(tcp);
         tcp.set_nonblocking(true);
         let socket_file: Box<dyn WasiFile> = wasmtime_wasi::net::Socket::from(tcp).into();
-
-        // FIXME: currently hardcoded the fd mapped into WASM -- need to configed by WASM if there are multiple connections later
-        let wanted_fd = 3;
         
-        let socket_fd: usize = (wanted_fd).try_into().unwrap();
+        let socket_fd: usize = (fd).try_into().unwrap();
 
         // Get the WasiCtx of the caller(WASM), then insert_file into it
         let mut ctx: &mut WasiCtx = caller.data_mut().preview1_ctx.as_mut().unwrap();

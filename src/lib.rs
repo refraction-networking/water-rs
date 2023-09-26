@@ -14,9 +14,9 @@ use std::sync::Arc;
 pub use config::Config;
 
 pub fn execute(conf: Config) -> Result<(), anyhow::Error> {
-    let mut connector = runtime::WATERStreamConnector::new(conf)?;
+    let mut water_client = runtime::WATERClient::new(conf)?;
 
-    let mut rs = connector.connect()?;
+    let mut rs = water_client.connect()?;
     // rs.connect(&connector.config)?;
 
     Ok(())

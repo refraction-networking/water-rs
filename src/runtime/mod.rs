@@ -2,7 +2,7 @@ pub mod net;
 pub mod funcs;
 
 use std::sync::Arc;
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use wasmtime::*;
 use wasi_common::WasiCtx;
@@ -14,22 +14,30 @@ use wasi_common::pipe::{ReadPipe, WritePipe};
 
 use wasmtime_wasi_threads::WasiThreadsCtx;
 
+use wasmtime_wasi::sync::Dir;
+use cap_std::ambient_authority;
+use cap_std::fs::OpenOptions;
+
+use tracing::{info, trace};
+
 use cap_std::net::{TcpListener, TcpStream};
 
 use crate::Config;
 use net::{File, FileName, ListenFile, ConnectFile};
-use funcs::{export_tcplistener_create};
+use funcs::{export_tcplistener_create, export_tcp_connect};
 
-use crate::globals::{VERSION_FN, RUNTIME_VERSION_MAJOR, RUNTIME_VERSION, INIT_FN, USER_READ_FN, WRITE_DONE_FN};
+use crate::globals::{VERSION_FN, RUNTIME_VERSION_MAJOR, RUNTIME_VERSION, INIT_FN, USER_READ_FN, WRITE_DONE_FN, CONFIG_FN};
 
-pub struct WATERStreamConnector {
-    pub config: Config,
+pub struct WATERClient {
     debug: bool,
+    
+    pub config: Config,
+    // pub stream: Option<WATERStream<Host>>,
 }
 
-impl WATERStreamConnector {
+impl WATERClient {
     pub fn new(conf: Config) -> Result<Self, anyhow::Error> {
-        Ok(WATERStreamConnector {
+        Ok(WATERClient {
             config: conf,
             debug: false,
         })
@@ -46,6 +54,7 @@ impl WATERStreamConnector {
         // NOTE: After creating the WATERStream, do some initial calls to WASM (e.g. version, init, etc.)
         runtime._version()?;
         runtime._init()?;
+        runtime._process_config()?;
 
         runtime.connect(&self.config)?;
         Ok(runtime)
@@ -72,7 +81,18 @@ pub struct WATERStream<Host> {
 }
 
 impl WATERStream<Host> {
-    pub fn connect(&mut self, conf: &Config) -> Result<(), anyhow::Error>  {
+
+    // /// Read from the target address
+    // pub fn read() -> Result<(), anyhow::Error> {
+
+        
+    //     Ok(())
+    // }
+
+    /// Connect to the target address with running the WASM entry function
+    pub fn connect(&mut self, conf: &Config) -> Result<(), anyhow::Error> {
+        info!("[HOST] WATERStream connecting...");
+
         let fnc = self.instance.get_func(&mut self.store, &conf.entry_fn).unwrap();
         match fnc.call(&mut self.store, &[], &mut []) {
             Ok(_) => {},
@@ -83,6 +103,7 @@ impl WATERStream<Host> {
     }
     
     pub fn init(conf: &Config) -> Result<Self, anyhow::Error> {
+        info!("[HOST] WATERStream init...");
         
         let mut wasm_config = wasmtime::Config::new();
         wasm_config.wasm_threads(true);
@@ -94,8 +115,10 @@ impl WATERStream<Host> {
         
         let host = Host::default();
         let mut store = Store::new(&engine, host);
+
+        let path = unsafe { Dir::open_ambient_dir(".", ambient_authority())? };
         
-        store.data_mut().preview1_ctx = Some(WasiCtxBuilder::new().inherit_stdio().build());
+        store.data_mut().preview1_ctx = Some(WasiCtxBuilder::new().inherit_stdio().preopened_dir(path, ".")?.build());
         
         wasmtime_wasi::add_to_linker(&mut linker, |h: &mut Host| {
             h.preview1_ctx.as_mut().unwrap()
@@ -116,6 +139,7 @@ impl WATERStream<Host> {
         }
         
         // export functions -- link connect functions
+        export_tcp_connect(&mut linker);
         export_tcplistener_create(&mut linker);
         
         let instance = linker.instantiate(&mut store, &module)?;
@@ -132,6 +156,8 @@ impl WATERStream<Host> {
     }
 
     pub fn _version(&mut self) -> Result<(), anyhow::Error> {
+        info!("[HOST] WATERStream calling _version from WASM...");
+
         let version_fn = match self.instance.get_func(&mut self.store, VERSION_FN) {
             Some(func) => func,
             None => return Err(anyhow::Error::msg("version function not found")),
@@ -159,13 +185,34 @@ impl WATERStream<Host> {
     }
 
     pub fn _init(&mut self) -> Result<(), anyhow::Error> {
+        info!("[HOST] WATERStream calling _init from WASM...");
+
         let init_fn = match self.instance.get_func(&mut self.store, INIT_FN) {
             Some(func) => func,
             None => return Err(anyhow::Error::msg("init function not found")),
         };
 
         // TODO: check if we need to pass in any arguments / configs later
-        init_fn.call(&mut self.store, &[], &mut [])?;
+        match init_fn.call(&mut self.store, &[], &mut []) {
+            Ok(_) => {},
+            Err(e) => return Err(anyhow::Error::msg(format!("init function failed: {}", e))),
+        }
+
+        Ok(())
+    }
+
+    pub fn _process_config(&mut self) -> Result<(), anyhow::Error> {
+        info!("[HOST] WATERStream calling _process_config from WASM...");
+
+        let config_fn = match self.instance.get_func(&mut self.store, CONFIG_FN) {
+            Some(config_fn) => config_fn,
+            None => return Err(anyhow::Error::msg("process_config function not found")),
+        };
+
+        match config_fn.call(&mut self.store, &[], &mut []) {
+            Ok(_) => {},
+            Err(e) => return Err(anyhow::Error::msg(format!("process_config function failed: {}", e))),
+        }
 
         Ok(())
     }
