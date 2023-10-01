@@ -6,7 +6,7 @@ use clap::Parser;
 use crate::globals::{WASM_PATH, MAIN, CONFIF_WASM_PATH};
 
 // pub mod parser;
-pub mod sharedconfig;
+pub mod wasm_shared_config;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -23,32 +23,35 @@ struct Args {
     #[arg(short, long, default_value_t = String::from(MAIN))]
     entry_fn: String,
 
-    /// Optional argument specifying the .wasm file to load
+    /// Optional argument specifying the config file
     #[arg(short, long, default_value_t = String::from(CONFIF_WASM_PATH))]
     config_wasm: String,
+
+    /// Optional argument specifying the client_type, default to be Runner
+    #[arg(short, long, default_value_t = 2)]
+    type_client: u32,
 }
 
 pub struct Config {
     pub filepath: String,
     pub entry_fn: String,
-    pub config_wasm: String
+    pub config_wasm: String,
+    pub client_type: u32,
 }
 
 impl Config {
-    // pub fn init() -> Result<Arc<Self>, anyhow::Error> {
-    pub fn init() -> Result<Self, anyhow::Error> {
+    pub fn from_args() -> Result<Self, anyhow::Error> {
         let args = Args::parse();
 
-        // let config = Arc::new(Config {
-        //     filepath: args.wasm_path,
-        //     entry_fn: args.entry_fn,
-        //     config_wasm: args.config_wasm,
-        // });
+        Self::init(args.wasm_path, args.entry_fn, args.config_wasm, args.type_client)
+    }
 
+    pub fn init(wasm_path: String, entry_fn: String, config_wasm: String, client_type: u32) -> Result<Self, anyhow::Error> {
         Ok(Config {
-            filepath: args.wasm_path,
-            entry_fn: args.entry_fn,
-            config_wasm: args.config_wasm,
+            filepath: wasm_path,
+            entry_fn: entry_fn,
+            config_wasm: config_wasm,
+            client_type: client_type,
         })
     }
 }

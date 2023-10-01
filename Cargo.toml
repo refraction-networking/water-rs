@@ -1,16 +1,16 @@
 [package]
-name = "WASMable-Transport"
+name = "W-A-T-E-R"
 version = "0.1.0"
 author = "cerikccc@gmail.com"
 edition = "2021"
 
 [lib]
 # crate-type = ["cdylib"]
-name = "wasmable_transport"
+name = "water"
 path = "src/lib.rs"
 
 [[bin]]
-name = "wasmable_transport"
+name = "water_cli"
 path = "src/main.rs"
 
 [dependencies]
@@ -37,3 +37,8 @@ bincode = "1.3"
 rustls = "0.20.6"
 rustls-pemfile = "1.0.0"
 zeroize = { version = "1.5.4", features = ["alloc"] }
+
+# test & benchmark dependency
+[dev-dependencies]
+rand = "0.8"
+pprof = { version = "0.11.1", features = ["flamegraph", "protobuf-codec", "prost-codec"] }

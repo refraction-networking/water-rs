@@ -1,6 +1,5 @@
-mod cli;
+use water::*;
 
-use wasmable_transport;
 use tracing_subscriber;
 use tracing::Level;
 

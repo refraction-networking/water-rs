@@ -1,5 +1,5 @@
 use crate::runtime::*;
-use crate::sharedconfig::StreamConfig;
+use crate::config::wasm_shared_config::StreamConfig;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
 pub fn export_tcp_connect(linker: &mut Linker<Host>) {
@@ -38,14 +38,14 @@ pub fn export_tcp_connect(linker: &mut Linker<Host>) {
         };
 
         let tcp = match (host.as_str(), port) {
-            ("localhost", port) => std::net::TcpStream::connect(SocketAddr::V4(SocketAddrV4::new(
-                Ipv4Addr::LOCALHOST,
-                port,
-            ))),
-            addr => std::net::TcpStream::connect(addr),
-        }
-        .map(TcpStream::from_std)
-        .context("failed to connect to endpoint").unwrap();
+                ("localhost", port) => std::net::TcpStream::connect(SocketAddr::V4(SocketAddrV4::new(
+                    Ipv4Addr::LOCALHOST,
+                    port,
+                ))),
+                addr => std::net::TcpStream::connect(addr),
+            }
+            .map(TcpStream::from_std)
+            .context("failed to connect to endpoint").unwrap();
     
         // Connecting Tcp
         let socket_file: Box<dyn WasiFile>  = wasmtime_wasi::net::Socket::from(tcp).into();

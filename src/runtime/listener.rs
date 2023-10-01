@@ -1,17 +1,6 @@
 use crate::runtime::*;
 
-/// This file contains the WATERStream implementation
-/// which is a TcpStream liked definition with utilizing WASM
-
-//           UnixSocket          Connection created with Host
-//    Write =>  u2w  +----------------+  w2n
-//		       ----->|  WATERStream   |------>
-//		Caller       |  WASM Runtime  |  n2w    Destination
-//		       <-----| Decode/Encode  |<------
-//    Read  =>  w2u  +----------------+
-//	                    WATERStream
-
-pub struct WATERStream<Host> {
+pub struct WATERListener<Host> {
     // WASM functions for reading & writing
 
     // the reader in WASM (read from net -- n2w)
@@ -28,7 +17,7 @@ pub struct WATERStream<Host> {
     pub core: H2O<Host>, // core WASM runtime (engine, linker, instance, store, module)
 }
 
-impl WATERStream<Host> {
+impl WATERListener<Host> {
 
     /// Read from the target address
     pub fn read(&mut self, buf: &mut Vec<u8>) -> Result<i64, anyhow::Error> {
@@ -86,9 +75,9 @@ impl WATERStream<Host> {
         Ok(())
     }
 
-    /// Connect to the target address with running the WASM connect function
-    pub fn connect(&mut self, conf: &Config, addr: &str, port: u16) -> Result<(), anyhow::Error> {
-        info!("[HOST] WATERStream connecting...");
+    /// Listening at the addr:port with running the WASM listen function
+    pub fn listen(&mut self, conf: &Config, addr: &str, port: u16) -> Result<(), anyhow::Error> {
+        info!("[HOST] WATERStream listening...");
 
         // TODO: add addr:port sharing with WASM, for now WASM is using config.json's remote_addr:port
         let fnc = self.core.instance.get_func(&mut self.core.store, &conf.entry_fn).unwrap();
@@ -148,7 +137,7 @@ impl WATERStream<Host> {
             None => return Err(anyhow::Error::msg(format!("{} function not found in WASM", WRITER_FN))),
         };
 
-        let runtime = WATERStream {
+        let runtime = WATERListener {
             reader: reader,
             writer: writer,
 

@@ -14,10 +14,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ "ubuntu-latest", "windows-latest", "macos-latest" ]
-        # go: [ "1.20.x", "1.21.x" ]
+        os: [ "ubuntu-latest", "macos-latest" ]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v3
     - name: Build
       run: cargo build --verbose
+    - name: Test
+      run: cargo test --verbose
