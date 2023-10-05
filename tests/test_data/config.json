@@ -1,6 +1,6 @@
 {
     "remote_address": "127.0.0.1",
-    "remote_port": 8088,
+    "remote_port": 8080,
     "local_address": "127.0.0.1",
     "local_port": 8088
 }

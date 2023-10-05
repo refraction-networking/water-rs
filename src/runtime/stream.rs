@@ -22,8 +22,7 @@ pub struct WATERStream<Host> {
     // returns the number of bytes written
     pub writer: Func, 
 
-    pub caller_reader: UnixStream, // the reader in Caller (read from WASM -- w2u)
-    pub caller_writer: UnixStream, // the writer in Caller (write to WASM -- u2w)
+    pub caller_io: UnixStream, // the pipe for communcating between Host and WASM
 
     pub core: H2O<Host>, // core WASM runtime (engine, linker, instance, store, module)
 }
@@ -32,7 +31,7 @@ impl WATERStream<Host> {
 
     /// Read from the target address
     pub fn read(&mut self, buf: &mut Vec<u8>) -> Result<i64, anyhow::Error> {
-        info!("[HOST] WATERStream reading...");
+        debug!("[HOST] WATERStream reading...");
 
         let mut res = vec![Val::I64(0); self.reader.ty(&self.core.store).results().len()];
         match self.reader.call(&mut self.core.store, &[], &mut res) {
@@ -49,7 +48,7 @@ impl WATERStream<Host> {
 
         // read from WASM's caller_reader
         buf.resize(nums as usize, 0);
-        match self.caller_reader.read(&mut buf[..]) {
+        match self.caller_io.read(&mut buf[..]) {
             Ok(_) => {},
             Err(e) => return Err(anyhow::Error::msg(format!("failed to read from caller_reader: {}", e))),
         }
@@ -59,10 +58,10 @@ impl WATERStream<Host> {
 
     /// Write to the target address
     pub fn write(&mut self, buf: &[u8]) -> Result<(), anyhow::Error> {
-        info!("[HOST] WATERStream writing...");
+        debug!("[HOST] WATERStream writing...");
 
         // write to WASM's caller_writer
-        match self.caller_writer.write_all(buf) {
+        match self.caller_io.write_all(buf) {
             Ok(_) => {},
             Err(e) => return Err(anyhow::Error::msg(format!("failed to write to caller_writer: {}", e))),
         }
@@ -87,11 +86,16 @@ impl WATERStream<Host> {
     }
 
     /// Connect to the target address with running the WASM connect function
-    pub fn connect(&mut self, conf: &Config, addr: &str, port: u16) -> Result<(), anyhow::Error> {
+    pub fn connect(&mut self, conf: &WATERConfig, addr: &str, port: u16) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERStream connecting...");
 
         // TODO: add addr:port sharing with WASM, for now WASM is using config.json's remote_addr:port
-        let fnc = self.core.instance.get_func(&mut self.core.store, &conf.entry_fn).unwrap();
+        // let fnc = self.core.instance.get_func(&mut self.core.store, &conf.entry_fn).unwrap();
+        let fnc = match self.core.instance.get_func(&mut self.core.store, &conf.entry_fn) {
+            Some(func) => func,
+            None => return Err(anyhow::Error::msg(format!("{} function not found in WASM", conf.entry_fn))),
+        };
+
         match fnc.call(&mut self.core.store, &[], &mut []) {
             Ok(_) => {},
             Err(e) => return Err(anyhow::Error::msg(format!("connect function failed: {}", e))),
@@ -101,37 +105,32 @@ impl WATERStream<Host> {
         Ok(())
     }
     
-    pub fn init(conf: &Config) -> Result<Self, anyhow::Error> {
+    pub fn init(conf: &WATERConfig) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERStream init...");
 
         let mut core = H2O::init(conf)?;
         core._prepare(conf)?;
         
-        // constructing 2 pairs of UnixStream for communicating between WASM and Host
-        // returns (read_end, write_end) for caller
-        let (caller_read_end, water_write_end) = UnixStream::pair()?;
-        let (water_read_end, caller_write_end) = UnixStream::pair()?;
-
-        let water_write_file = unsafe { cap_std::fs::File::from_raw_fd(water_write_end.as_raw_fd()) };
-        let water_read_file = unsafe { cap_std::fs::File::from_raw_fd(water_read_end.as_raw_fd()) };
+        // constructing a pair of UnixStream for communicating between WASM and Host
+        let (caller_end, water_end) = UnixStream::pair()?;
         
+        let water_end_file = unsafe { cap_std::fs::File::from_raw_fd(water_end.as_raw_fd()) };
+                
         // insert file here
-        let wasi_water_reader = wasmtime_wasi::sync::file::File::from_cap_std(water_read_file);
-        let wasi_water_writer = wasmtime_wasi::sync::file::File::from_cap_std(water_write_file);
+        let water_end_file = wasmtime_wasi::sync::file::File::from_cap_std(water_end_file);
 
-        std::mem::forget(water_write_end);
-        std::mem::forget(water_read_end);
+        std::mem::forget(water_end); // forget the water_end, so that it won't be closed
         
         let ctx = core.store.data_mut().preview1_ctx.as_mut().unwrap();
-        let water_reader_fd = ctx.push_file(Box::new(wasi_water_reader), FileAccessMode::all())?;
-        let water_writer_fd = ctx.push_file(Box::new(wasi_water_writer), FileAccessMode::all())?;
+        let water_end_fd = ctx.push_file(Box::new(water_end_file), FileAccessMode::all())?;
 
         let water_bridging = match core.instance.get_func(&mut core.store, WATER_BRIDGING_FN) {
             Some(func) => func,
             None => return Err(anyhow::Error::msg(format!("{} function not found in WASM", WATER_BRIDGING_FN))),
         };
 
-        let params = vec![Val::I32(water_reader_fd as i32), Val::I32(water_writer_fd as i32)];
+        // let params = vec![Val::I32(water_reader_fd as i32), Val::I32(water_writer_fd as i32)];
+        let params = vec![Val::I32(water_end_fd as i32)];
         match water_bridging.call(&mut core.store, &params, &mut []) {
             Ok(_) => {},
             Err(e) => return Err(anyhow::Error::msg(format!("{} function failed: {}", WATER_BRIDGING_FN, e))),
@@ -152,8 +151,7 @@ impl WATERStream<Host> {
             reader: reader,
             writer: writer,
 
-            caller_reader: caller_read_end,
-            caller_writer: caller_write_end,
+            caller_io: caller_end,
 
             core: core,
         };

@@ -76,7 +76,7 @@ impl WATERListener<Host> {
     }
 
     /// Listening at the addr:port with running the WASM listen function
-    pub fn listen(&mut self, conf: &Config, addr: &str, port: u16) -> Result<(), anyhow::Error> {
+    pub fn listen(&mut self, conf: &WATERConfig, addr: &str, port: u16) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERStream listening...");
 
         // TODO: add addr:port sharing with WASM, for now WASM is using config.json's remote_addr:port
@@ -90,7 +90,7 @@ impl WATERListener<Host> {
         Ok(())
     }
     
-    pub fn init(conf: &Config) -> Result<Self, anyhow::Error> {
+    pub fn init(conf: &WATERConfig) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERStream init...");
 
         let mut core = H2O::init(conf)?;

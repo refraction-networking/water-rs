@@ -2,6 +2,7 @@ use crate::runtime::*;
 use crate::config::wasm_shared_config::StreamConfig;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
+// TODO: rename this to dial_v1, since it has the ability to let WASM choose ip:port
 pub fn export_tcp_connect(linker: &mut Linker<Host>) {
     linker.func_wrap("env", "connect_tcp", move |mut caller: Caller<'_, Host>, ptr: u32, size: u32| -> i32{
 
@@ -56,6 +57,7 @@ pub fn export_tcp_connect(linker: &mut Linker<Host>) {
     }).unwrap();
 }
 
+// TODO: rename this to dial_v1, since it has the ability to let WASM listen on a TcpListener
 pub fn export_tcplistener_create(linker: &mut Linker<Host>) {
     linker.func_wrap("env", "create_listen", move |mut caller: Caller<'_, Host>, ptr: u32, size: u32| -> i32{
 

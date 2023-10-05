@@ -12,7 +12,7 @@ The repo will contain 2 parts of purposes:
 
 ### What is needed for the library / cli
 #### The Host side:
-**Config**: calls main program / some library entry func -> use claps to get args (making use of some `Args` struct) -> then convert it to a `Config` struct.
+**Config**: calls main program / some library entry func -> use claps to get args (making use of some `Args` struct) -> then convert it to a `WATERConfig` struct.
 
 **execute**: 
 1. wasmtime runtime creation

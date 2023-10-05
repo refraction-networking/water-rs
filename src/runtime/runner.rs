@@ -6,7 +6,7 @@ pub struct WATERRunner<Host> {
 
 impl WATERRunner<Host> {
     /// Run the entry function
-    pub fn run(&mut self, conf: &Config) -> Result<(), anyhow::Error> {
+    pub fn run(&mut self, conf: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERRunner running...");
 
         let fnc = self.core.instance.get_func(&mut self.core.store, &conf.entry_fn).unwrap();
@@ -18,7 +18,7 @@ impl WATERRunner<Host> {
         Ok(())
     }
     
-    pub fn init(conf: &Config) -> Result<Self, anyhow::Error> {
+    pub fn init(conf: &WATERConfig) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERRunner init...");
 
         let mut core = H2O::init(conf)?;

@@ -30,28 +30,34 @@ struct Args {
     /// Optional argument specifying the client_type, default to be Runner
     #[arg(short, long, default_value_t = 2)]
     type_client: u32,
+
+    /// Optional argument specifying the client_type, default to be Runner
+    #[arg(short, long, default_value_t = false)]
+    debug: bool,
 }
 
-pub struct Config {
+pub struct WATERConfig {
     pub filepath: String,
     pub entry_fn: String,
     pub config_wasm: String,
     pub client_type: u32,
+    pub debug: bool,
 }
 
-impl Config {
+impl WATERConfig {
     pub fn from_args() -> Result<Self, anyhow::Error> {
         let args = Args::parse();
 
-        Self::init(args.wasm_path, args.entry_fn, args.config_wasm, args.type_client)
+        Self::init(args.wasm_path, args.entry_fn, args.config_wasm, args.type_client, args.debug)
     }
 
-    pub fn init(wasm_path: String, entry_fn: String, config_wasm: String, client_type: u32) -> Result<Self, anyhow::Error> {
-        Ok(Config {
+    pub fn init(wasm_path: String, entry_fn: String, config_wasm: String, client_type: u32, debug: bool) -> Result<Self, anyhow::Error> {
+        Ok(WATERConfig {
             filepath: wasm_path,
             entry_fn: entry_fn,
             config_wasm: config_wasm,
             client_type: client_type,
+            debug: debug,
         })
     }
 }

@@ -1,10 +1,10 @@
-use crate::{config::Config, runtime};
+use crate::{config::WATERConfig, runtime};
 
 use std::sync::Arc;
 
-pub fn parse() -> Result<Config, anyhow::Error> {
+pub fn parse() -> Result<WATERConfig, anyhow::Error> {
     // Parse command-line arguments and execute the appropriate commands
-    let conf = Config::from_args()?;
+    let conf = WATERConfig::from_args()?;
     Ok(conf)
 }
 
@@ -12,7 +12,7 @@ pub fn parse_and_execute() -> Result<(), anyhow::Error> {
     execute(parse()?)
 }
 
-pub fn execute(conf: Config) -> Result<(), anyhow::Error> {
+pub fn execute(conf: WATERConfig) -> Result<(), anyhow::Error> {
     let mut water_client = runtime::WATERClient::new(conf)?;
 
     // // FIXME: hardcoded the addr & port for now
