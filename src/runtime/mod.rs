@@ -1,53 +1,57 @@
+// =================== MODULES ===================
 pub mod net;
 pub mod v0;
+pub mod v1;
+pub mod version_common;
 pub mod stream;
 pub mod core;
 pub mod listener;
 pub mod runner;
 pub mod version;
 
-use std::sync::Arc;
+// =================== STD Imports ===================
+use std::{
+    io::{Read, Write},
+    os::unix::io::{AsRawFd, FromRawFd},
+    sync::Arc,
+};
+
+// =================== EXTERNAL CRATES ===================
 use anyhow::{Context, Result};
-
-use cap_std::os::unix::net::UnixStream;
-use tracing_subscriber::fmt::format;
+use cap_std::{
+    ambient_authority,
+    fs::OpenOptions,
+    net::{TcpListener, TcpStream},
+    os::unix::net::UnixStream,
+};
+use tracing::{debug, info};
+use wasi_common::{
+    file::FileAccessMode,
+    WasiCtx,
+    WasiFile,
+};
 use wasmtime::*;
-use wasi_common::WasiCtx;
-use wasi_common::WasiFile;
-use wasi_common::file::FileAccessMode;
-
-use wasmtime_wasi::sync::WasiCtxBuilder;
-use wasi_common::pipe::{ReadPipe, WritePipe};
-
+use wasmtime_wasi::sync::{Dir, WasiCtxBuilder};
 use wasmtime_wasi_threads::WasiThreadsCtx;
 
-use wasmtime_wasi::sync::Dir;
-use cap_std::ambient_authority;
-use cap_std::fs::OpenOptions;
-use std::os::unix::io::{AsRawFd, FromRawFd};
-// use system_interface::io::io_ext::IoExt;
-use std::io::{Read, Write};
+// =================== CURRENT CRATE IMPORTS ===================
+use crate::{
+    config::{WATERConfig},
+    globals::{
+        CONFIG_FN, INIT_FN, READER_FN, WATER_BRIDGING_FN, WRITER_FN,
+    },
+};
 
-use tracing::{info, trace, debug};
-
-use cap_std::net::{TcpListener, TcpStream};
-
-use crate::config::WATERConfig;
-use crate::config::wasm_shared_config::WASMSharedConfig;
-use crate::globals::READER_FN;
-use crate::globals::WRITER_FN;
-
-use net::{File, FileName, ListenFile, ConnectFile};
-
-use crate::globals::{VERSION_FN, RUNTIME_VERSION_MAJOR, RUNTIME_VERSION, INIT_FN, USER_READ_FN, WRITE_DONE_FN, CONFIG_FN, WATER_BRIDGING_FN};
-
-use stream::{WATERStream};
-use listener::{WATERListener};
-use runner::{WATERRunner};
-use version::Version;
-// use core::WATERCore;
+// =================== MODULES' DEPENDENCIES ===================
 use core::{H2O, Host};
+use listener::WATERListener;
+use net::{ConnectFile, File, ListenFile};
+use runner::WATERRunner;
+use stream::WATERStream;
+use version::Version;
 
+
+// =================== WATERClient Definition ===================
 pub enum WATERClientType {
     Dialer(WATERStream<Host>),
     Listener(WATERListener<Host>),
@@ -64,15 +68,15 @@ pub struct WATERClient {
 impl WATERClient {
     pub fn new(conf: WATERConfig) -> Result<Self, anyhow::Error> {
         // client_type: 0 -> Dialer, 1 -> Listener, 2 -> Runner
-        let mut water: WATERClientType;
+        let water: WATERClientType;
         if conf.client_type == 0 {
-            let mut stream = WATERStream::init(&conf)?;
+            let stream = WATERStream::init(&conf)?;
             water = WATERClientType::Dialer(stream);
         } else if conf.client_type == 1 {
-            let mut stream = WATERListener::init(&conf)?;
+            let stream = WATERListener::init(&conf)?;
             water = WATERClientType::Listener(stream);
         } else if conf.client_type == 2 {
-            let mut runner = WATERRunner::init(&conf)?;
+            let runner = WATERRunner::init(&conf)?;
             water = WATERClientType::Runner(runner);
         } else {
             return Err(anyhow::anyhow!("Invalid client type"));

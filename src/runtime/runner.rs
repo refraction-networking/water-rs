@@ -25,7 +25,7 @@ impl WATERRunner<Host> {
         core._prepare(conf)?;
         
         let runtime = WATERRunner {
-            core: core,
+            core,
         };
 
         Ok(runtime)

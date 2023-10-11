@@ -69,14 +69,22 @@ impl H2O<Host> {
             })?;
         }
 
-        // export functions -- link connect functions -- has to be done before instantiate
+        
+        // export functions -- version dependent -- has to be done before instantiate
         match &version {
             Some(Version::V0) => {
                 v0::funcs::export_tcp_connect(&mut linker);
                 v0::funcs::export_tcplistener_create(&mut linker);
             },
+            Some(Version::V1) => {
+                v1::funcs::export_tcp_connect(&mut linker);
+                v1::funcs::export_tcplistener_create(&mut linker);
+            },
             _ => {} // add export funcs for other versions here
         }
+
+        // export functions -- version independent
+        version_common::funcs::export_config(&mut linker, conf.config_wasm.clone());
         
         let instance = linker.instantiate(&mut store, &module)?;
 
@@ -92,7 +100,7 @@ impl H2O<Host> {
     }
 
     pub fn _prepare(&mut self, conf: &WATERConfig) -> Result<(), anyhow::Error> {
-        self._version()?;
+        // NOTE: version has been checked at the very beginning
         self._init(conf.debug)?;
         self._process_config(&conf)?;
         Ok(())
@@ -112,50 +120,6 @@ impl H2O<Host> {
             Ok(_) => {},
             Err(e) => return Err(anyhow::Error::msg(format!("init function failed: {}", e))),
         }
-
-        Ok(())
-    }
-
-    pub fn _version(&mut self) -> Result<(), anyhow::Error> {
-        info!("[HOST] WATERCore H2O calling _version from WASM...");
-
-        let version_fn = match self.instance.get_func(&mut self.store, VERSION_FN) {
-            Some(func) => func,
-            None => return Err(anyhow::Error::msg("version function not found")),
-        };
-
-        // let mut res = vec![Val::I32(0); version_fn.ty(&self.core.store).results().len()];
-
-        // NOTE: below is the most generic way to setup the res vector, to avoid panic from calling
-        let mut res: Vec<Val> = version_fn
-            .ty(&self.store)
-            .results()
-            .map(|ty| // map each type to a default value
-                match ty {
-                    // i32 and i64 are the only integer types in WebAssembly as of 2021
-                    ValType::I32 => Val::I32(0),
-                    ValType::I64 => Val::I64(0),
-                    ValType::F32 => Val::F32(0),
-                    ValType::F64 => Val::F64(0),
-                    _            => panic!("Unsupported type"),
-                }
-            )
-            .collect(); // collect the default values into a Vec
-        
-        match version_fn.call(&mut self.store, &[], &mut res) {
-            Ok(_) => {},
-            Err(e) => return Err(anyhow::Error::msg(format!("version function failed: {}", e))),
-        }
-        
-        match res.get(0) {
-            Some(Val::I32(v)) => {
-                if *v != RUNTIME_VERSION_MAJOR {
-                    return Err(anyhow::Error::msg(format!("WASI module version {} is not compatible with runtime version {}", v, RUNTIME_VERSION)));
-                }
-            },
-            Some(_) => return Err(anyhow::Error::msg("version function returned unexpected type")),
-            None => return Err(anyhow::Error::msg("version function has no return")),
-        };
 
         Ok(())
     }

@@ -96,7 +96,6 @@ pub fn export_tcplistener_create(linker: &mut Linker<Host>) {
         // Creating Tcp Listener
         let tcp = std::net::TcpListener::bind((addr.as_str(), port)).unwrap();
         let tcp = TcpListener::from_std(tcp);
-        // tcp.set_nonblocking(true);
         let socket_file: Box<dyn WasiFile> = wasmtime_wasi::net::Socket::from(tcp).into();
 
         // Get the WasiCtx of the caller(WASM), then insert_file into it
