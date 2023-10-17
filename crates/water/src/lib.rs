@@ -1,4 +1,3 @@
-extern crate clap;
 extern crate anyhow;
 extern crate cap_std;
 extern crate serde;

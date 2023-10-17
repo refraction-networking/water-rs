@@ -9,7 +9,7 @@ pub fn export_tcp_connect(linker: &mut Linker<Host>) {
     linker.func_wrap("env", "connect_tcp", move |mut caller: Caller<'_, Host>, ptr: u32, size: u32| -> i32{
 
         info!("[WASM] invoking Host exported Dial func connect_tcp...");
-        
+
         let memory = match caller.get_export("memory") {
             Some(Extern::Memory(memory)) => memory,
             _ => return -1,
@@ -20,7 +20,7 @@ pub fn export_tcp_connect(linker: &mut Linker<Host>) {
 
         // Use the offset and size to get the relevant part of the memory.
         let data = &mut mem_slice[ptr as usize..(ptr as usize + size as usize)];
-        
+
         let mut config: StreamConfig;
         unsafe {
             config = bincode::deserialize(&data).expect("Failed to deserialize");
@@ -75,7 +75,7 @@ pub fn export_tcplistener_create(linker: &mut Linker<Host>) {
 
         // Use the offset and size to get the relevant part of the memory.
         let data = &mut mem_slice[ptr as usize..(ptr as usize + size as usize)];
-        
+
         let mut config: StreamConfig;
         unsafe {
             config = bincode::deserialize(&data).expect("Failed to deserialize");
@@ -107,7 +107,7 @@ pub fn export_tcplistener_create(linker: &mut Linker<Host>) {
 }
 
 // Generically link dial functions
-// pub fn linkDialFuns(linker: &mut Linker<Host>) {
+// pub fn linkDialFns(linker: &mut Linker<Host>) {
 //     let network = vec!["tcplistener", "tlslistener", "udp"];
 
 //     for net in &network {
