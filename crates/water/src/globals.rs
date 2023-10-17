@@ -1,5 +1,5 @@
 pub const WASM_PATH: &str = "./proxy.wasm";
-pub const CONFIF_WASM_PATH: &str = "./conf.json";
+pub const CONFIG_WASM_PATH: &str = "./conf.json";
 
 const ALLOC_FN: &str = "alloc";
 const MEMORY: &str = "memory";

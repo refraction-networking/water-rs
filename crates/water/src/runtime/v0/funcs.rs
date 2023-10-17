@@ -1,13 +1,15 @@
 use crate::runtime::*;
 use crate::config::wasm_shared_config::StreamConfig;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+use std::convert::TryInto;
+
 
 // TODO: rename this to dial_v1, since it has the ability to let WASM choose ip:port
 pub fn export_tcp_connect(linker: &mut Linker<Host>) {
     linker.func_wrap("env", "connect_tcp", move |mut caller: Caller<'_, Host>, ptr: u32, size: u32| -> i32{
 
         info!("[WASM] invoking Host exported Dial func connect_tcp...");
-        
+
         let memory = match caller.get_export("memory") {
             Some(Extern::Memory(memory)) => memory,
             _ => return -1,
@@ -96,6 +98,7 @@ pub fn export_tcplistener_create(linker: &mut Linker<Host>) {
         // Creating Tcp Listener
         let tcp = std::net::TcpListener::bind((addr.as_str(), port)).unwrap();
         let tcp = TcpListener::from_std(tcp);
+        // tcp.set_nonblocking(true);
         let socket_file: Box<dyn WasiFile> = wasmtime_wasi::net::Socket::from(tcp).into();
 
         // Get the WasiCtx of the caller(WASM), then insert_file into it
@@ -105,7 +108,7 @@ pub fn export_tcplistener_create(linker: &mut Linker<Host>) {
 }
 
 // Generically link dial functions
-// pub fn linkDialFuns(linker: &mut Linker<Host>) {
+// pub fn linkDialFns(linker: &mut Linker<Host>) {
 //     let network = vec!["tcplistener", "tlslistener", "udp"];
 
 //     for net in &network {

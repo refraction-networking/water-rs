@@ -1,6 +1,7 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 
 use std::ops::Deref;
+use std::convert::{TryFrom, TryInto};
 
 // ========= Definition for files shared between WASM & Host for creating connections ===========
 // TODO: migrate these code to a src file later

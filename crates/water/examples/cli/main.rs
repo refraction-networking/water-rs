@@ -1,12 +1,14 @@
-use std::io::{Read, Write};
-use std::sync::Arc;
+use water::*;
+use water::globals::{WASM_PATH, MAIN, CONFIG_WASM_PATH};
+mod cli;
+use cli;
 
+use tracing_subscriber;
+use tracing::Level;
 use clap::Parser;
 
-use crate::globals::{WASM_PATH, MAIN, CONFIF_WASM_PATH};
 
-// pub mod parser;
-pub mod wasm_shared_config;
+
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -18,13 +20,13 @@ struct Args {
     /// Optional argument specifying the .wasm file to load
     #[arg(short, long, default_value_t = String::from(WASM_PATH))]
     wasm_path: String,
-    
+
     /// Optional argument specifying name of the function in the .wasm file to use
     #[arg(short, long, default_value_t = String::from(MAIN))]
     entry_fn: String,
 
     /// Optional argument specifying the config file
-    #[arg(short, long, default_value_t = String::from(CONFIF_WASM_PATH))]
+    #[arg(short, long, default_value_t = String::from(CONFIG_WASM_PATH))]
     config_wasm: String,
 
     /// Optional argument specifying the client_type, default to be Runner
@@ -36,28 +38,23 @@ struct Args {
     debug: bool,
 }
 
-pub struct WATERConfig {
-    pub filepath: String,
-    pub entry_fn: String,
-    pub config_wasm: String,
-    pub client_type: u32,
-    pub debug: bool,
+
+impl From<Args> for WATERConfig {
+    fn from(args: Args) -> Self {
+        Self {
+            filepath: args.wasm_path,
+            entry_fn: args.entry_fn,
+            config_wasm: args.config_wasm,
+            client_type: args.type_client,
+            debug: args.debug,
+        }
+    }
 }
 
-impl WATERConfig {
-    pub fn from_args() -> Result<Self, anyhow::Error> {
-        let args = Args::parse();
+fn main() -> Result<(), anyhow::Error> {
+    tracing_subscriber::fmt()
+        .with_max_level(Level::INFO)
+        .init();
 
-        Self::init(args.wasm_path, args.entry_fn, args.config_wasm, args.type_client, args.debug)
-    }
-
-    pub fn init(wasm_path: String, entry_fn: String, config_wasm: String, client_type: u32, debug: bool) -> Result<Self, anyhow::Error> {
-        Ok(WATERConfig {
-            filepath: wasm_path,
-            entry_fn: entry_fn,
-            config_wasm: config_wasm,
-            client_type: client_type,
-            debug: debug,
-        })
-    }
+    cli::parse_and_execute()
 }

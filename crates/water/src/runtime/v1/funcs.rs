@@ -1,6 +1,8 @@
 use crate::runtime::*;
 use crate::config::wasm_shared_config::StreamConfig;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+use std::convert::TryInto;
+
 
 // TODO: rename this to dial_v1, since it has the ability to let WASM choose ip:port
 pub fn export_tcp_connect(linker: &mut Linker<Host>) {
@@ -96,7 +98,6 @@ pub fn export_tcplistener_create(linker: &mut Linker<Host>) {
         // Creating Tcp Listener
         let tcp = std::net::TcpListener::bind((addr.as_str(), port)).unwrap();
         let tcp = TcpListener::from_std(tcp);
-        // tcp.set_nonblocking(true);
         let socket_file: Box<dyn WasiFile> = wasmtime_wasi::net::Socket::from(tcp).into();
 
         // Get the WasiCtx of the caller(WASM), then insert_file into it

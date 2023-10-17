@@ -43,12 +43,12 @@ use crate::{
 };
 
 // =================== MODULES' DEPENDENCIES ===================
-use core::{H2O, Host};
-use listener::WATERListener;
-use net::{ConnectFile, File, ListenFile};
-use runner::WATERRunner;
-use stream::WATERStream;
-use version::Version;
+use self::core::{H2O, Host};
+use self::listener::WATERListener;
+use self::net::{ConnectFile, File, ListenFile};
+use self::runner::WATERRunner;
+use self::stream::WATERStream;
+use self::version::Version;
 
 
 // =================== WATERClient Definition ===================
@@ -60,7 +60,7 @@ pub enum WATERClientType {
 
 pub struct WATERClient {
     debug: bool,
-    
+
     pub config: WATERConfig,
     pub stream: WATERClientType,
 }

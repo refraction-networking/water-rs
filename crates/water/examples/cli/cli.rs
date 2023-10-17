@@ -4,7 +4,8 @@ use std::sync::Arc;
 
 pub fn parse() -> Result<WATERConfig, anyhow::Error> {
     // Parse command-line arguments and execute the appropriate commands
-    let conf = WATERConfig::from_args()?;
+
+    let conf: WATERConfig = Args.parse()?.into();
     Ok(conf)
 }
 
