@@ -21,6 +21,12 @@ pub struct ConnFile {
     pub file: Option<ConnStream>,
 }
 
+impl Default for ConnFile {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ConnFile {
     // A default constructor for ConnFile
     pub fn new() -> Self {
@@ -52,7 +58,7 @@ impl ConnFile {
                 ConnStream::File(stream) => stream.write_all(buf).map_err(anyhow::Error::from),
             },
             None => {
-                return Err(anyhow::anyhow!("[WASM] > ERROR: ConnFile's file is None"));
+                Err(anyhow::anyhow!("[WASM] > ERROR: ConnFile's file is None"))
             }
         }
     }
@@ -64,6 +70,12 @@ pub struct Connection {
     pub outbound_conn: ConnFile,
 
     pub config: Config,
+}
+
+impl Default for Connection {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Connection {
@@ -107,7 +119,7 @@ impl Connection {
         self.outbound_conn.file = Some(stream);
     }
 
-    // pub fn decoder_read_from_outbound<D: AsyncDecodeReader>(self: &mut Self, decoder: &mut D, buf: &mut [u8]) -> Result<i64, anyhow::Error> {
+    // pub fn decoder_read_from_outbound<D: AsyncDecodeReader>(&mut self, decoder: &mut D, buf: &mut [u8]) -> Result<i64, anyhow::Error> {
     //     debug!("[WASM] running in decoder_read_from_outbound");
 
     //     // match self.outbound_conn.file.as_mut().unwrap() {
@@ -123,14 +135,14 @@ impl Connection {
 
     /// this _read function is triggered by the Host to read from the remote connection
     pub fn _read_from_outbound<D: Decoder>(
-        self: &mut Self,
+        &mut self,
         decoder: &mut D,
     ) -> Result<i64, anyhow::Error> {
         debug!("[WASM] running in _read_from_net");
 
         let mut buf = vec![0u8; 4096];
         let bytes_read: i64 = match self.outbound_conn.read(&mut buf) {
-            Ok(n) => n as i64,
+            Ok(n) => n,
             Err(e) => {
                 // eprintln!("[WASM] > ERROR in _read when reading from outbound: {:?}", e);
                 // return -1; // Or another sentinel value to indicate error}
@@ -143,7 +155,7 @@ impl Connection {
 
         // NOTE: decode logic here
         let mut decoded = vec![0u8; 4096];
-        let len_after_decoding = match decoder.decode(&mut buf[..bytes_read as usize], &mut decoded)
+        let len_after_decoding = match decoder.decode(&buf[..bytes_read as usize], &mut decoded)
         {
             Ok(n) => n,
             Err(e) => {
@@ -175,7 +187,7 @@ impl Connection {
     }
 
     pub fn _write_2_outbound<E: Encoder>(
-        self: &mut Self,
+        &mut self,
         encoder: &mut E,
         bytes_write: i64,
     ) -> Result<i64, anyhow::Error> {
@@ -185,7 +197,7 @@ impl Connection {
         let mut buf = vec![0u8; 4096];
         loop {
             let read = match self.inbound_conn.read(&mut buf) {
-                Ok(n) => n as i64,
+                Ok(n) => n,
                 Err(e) => {
                     // eprintln!("[WASM] > ERROR in _read when reading from inbound: {:?}", e);
                     // return -1; // Or another sentinel value to indicate error
@@ -205,7 +217,7 @@ impl Connection {
 
         // NOTE: encode logic here
         let mut encoded = vec![0u8; 4096];
-        let len_after_encoding = match encoder.encode(&mut buf[..bytes_read as usize], &mut encoded)
+        let len_after_encoding = match encoder.encode(&buf[..bytes_read as usize], &mut encoded)
         {
             Ok(n) => n,
             Err(e) => {
@@ -236,7 +248,7 @@ impl Connection {
         Ok(len_after_encoding as i64)
     }
 
-    pub fn close_inbound(self: &mut Self) {
+    pub fn close_inbound(&mut self) {
         match &mut self.inbound_conn.file {
             Some(stream) => match stream {
                 ConnStream::TcpStream(stream) => {
@@ -254,7 +266,7 @@ impl Connection {
         self.inbound_conn.fd = -1;
     }
 
-    pub fn close_outbound(self: &mut Self) {
+    pub fn close_outbound(&mut self) {
         match &mut self.outbound_conn.file {
             Some(stream) => match stream {
                 ConnStream::TcpStream(stream) => {

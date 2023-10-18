@@ -36,7 +36,7 @@ impl H2O<Host> {
                 "[HOST] WATERCore finding exported symbols from WASM bin: {:?}",
                 global.name()
             );
-            match Version::from_str(global.name()) {
+            match Version::parse(global.name()) {
                 Some(v) => {
                     info!("[HOST] WATERCore found version: {:?}", v.as_str());
                     Some(v)
@@ -90,18 +90,18 @@ impl H2O<Host> {
         Ok(H2O {
             version: version.unwrap(),
 
-            engine: engine,
-            linker: linker,
-            instance: instance,
-            store: store,
-            module: module,
+            engine,
+            linker,
+            instance,
+            store,
+            module,
         })
     }
 
     pub fn _prepare(&mut self, conf: &WATERConfig) -> Result<(), anyhow::Error> {
         // NOTE: version has been checked at the very beginning
         self._init(conf.debug)?;
-        self._process_config(&conf)?;
+        self._process_config(conf)?;
         Ok(())
     }
 

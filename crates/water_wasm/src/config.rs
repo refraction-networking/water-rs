@@ -9,6 +9,12 @@ pub struct Config {
     pub remote_port: u32,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 // implement a constructor for the config
 impl Config {
     pub fn new() -> Self {
@@ -35,9 +41,9 @@ pub struct StreamConfigV1 {
 impl StreamConfigV1 {
     pub fn init(addr: String, port: u32, name: String) -> Self {
         StreamConfigV1 {
-            addr: addr,
-            port: port,
-            name: name,
+            addr,
+            port,
+            name,
         }
     }
 }

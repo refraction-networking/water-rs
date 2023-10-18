@@ -1,36 +1,19 @@
 // =================== Imports & Modules =====================
 use std::{
-    io::{self, Read, Write},
+    io::Read,
     os::fd::FromRawFd,
-    os::fd::IntoRawFd,
     sync::Mutex,
     vec,
 };
 
-use tokio::{
-    io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt},
-    net::{TcpListener, TcpStream},
-    time,
-    time::timeout,
-};
-
 use bincode::{self};
 use lazy_static::lazy_static;
-use serde_json;
-use tracing::{debug, info, Level};
-use tracing_subscriber;
-
-use anyhow::{Context, Result};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::fs::File;
-use std::mem;
-use std::time::Duration;
-use tokio_util::codec::{AnyDelimiterCodec, Framed, FramedParts};
+use tracing::{info, Level};
+use anyhow::Result;
 
 use water_wasm::*;
 
 pub mod async_socks5_listener;
-use async_socks5_listener::*;
 
 // create a mutable global variable stores a pointer to the config
 lazy_static! {
@@ -108,10 +91,9 @@ pub fn _process_config(fd: i32) {
         }
         Err(e) => {
             eprintln!(
-                "[WASM] > WASM _process_config falied reading path ERROR: {}",
+                "[WASM] > WASM _process_config failed reading path ERROR: {}",
                 e
             );
-            return;
         }
     };
 }
@@ -133,48 +115,43 @@ pub fn _write(bytes_write: i64) -> i64 {
         Ok(n) => n,
         Err(e) => {
             eprintln!("[WASM] > ERROR in _write: {}", e);
-            return -1;
+            -1
         }
     }
 }
 
 #[export_name = "_read"]
 pub fn _read() -> i64 {
-    let mut global_dialer = match DIALER.lock() {
-        Ok(dialer) => dialer,
+    match DIALER.lock() {
+        Ok(mut global_dialer) => {
+            match global_dialer
+            .file_conn
+            ._read_from_outbound(&mut DefaultDecoder)
+        {
+            Ok(n) => n,
+            Err(e) => {
+                eprintln!("[WASM] > ERROR in _read: {}", e);
+                -1
+            }
+        }
+        }
         Err(e) => {
             eprintln!("[WASM] > ERROR: {}", e);
-            return -1;
-        }
-    };
-
-    match global_dialer
-        .file_conn
-        ._read_from_outbound(&mut DefaultDecoder)
-    {
-        Ok(n) => n,
-        Err(e) => {
-            eprintln!("[WASM] > ERROR in _read: {}", e);
-            return -1;
+            -1
         }
     }
 }
 
 #[export_name = "_dial"]
 pub fn _dial() {
-    let mut global_dialer = match DIALER.lock() {
-        Ok(dialer) => dialer,
+    match DIALER.lock() {
+        Ok(mut global_dialer) => {
+            if let Err(e) = global_dialer.dial() {
+                eprintln!("[WASM] > ERROR in _dial: {}", e);
+            }
+        }
         Err(e) => {
             eprintln!("[WASM] > ERROR: {}", e);
-            return;
-        }
-    };
-
-    match global_dialer.dial() {
-        Ok(_) => {}
-        Err(e) => {
-            eprintln!("[WASM] > ERROR in _dial: {}", e);
-            return;
         }
     }
 }

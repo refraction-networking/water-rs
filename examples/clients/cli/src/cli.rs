@@ -1,5 +1,5 @@
 use water::globals::{CONFIG_WASM_PATH, MAIN, WASM_PATH};
-use water::{config::WATERConfig, runtime};
+use water::config::WATERConfig;
 
 use clap::Parser;
 
@@ -54,8 +54,8 @@ pub fn parse_and_execute() -> Result<(), anyhow::Error> {
     execute(parse()?)
 }
 
-pub fn execute(conf: WATERConfig) -> Result<(), anyhow::Error> {
-    let mut water_client = runtime::WATERClient::new(conf)?;
+pub fn execute(_conf: WATERConfig) -> Result<(), anyhow::Error> {
+    // let mut water_client = runtime::WATERClient::new(conf)?;
 
     // // FIXME: hardcoded the addr & port for now
     // water_client.connect("", 0)?;

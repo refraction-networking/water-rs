@@ -32,7 +32,7 @@ where
     ) -> Poll<io::Result<()>> {
         #[allow(unused_mut)]
         let mut this = self.project();
-        return this.stream.poll_read_decrypted(cx, buf).map_err(Into::into);
+        this.stream.poll_read_decrypted(cx, buf).map_err(Into::into)
     }
 }
 
@@ -114,7 +114,7 @@ where
 }
 
 #[inline]
-pub fn make_first_packet_buffer(method: CipherKind, addr: &Address, buf: &[u8]) -> BytesMut {
+pub fn make_first_packet_buffer(_method: CipherKind, addr: &Address, buf: &[u8]) -> BytesMut {
     // Target Address should be sent with the first packet together,
     // which would prevent from being detected.
 

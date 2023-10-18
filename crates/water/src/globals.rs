@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub const WASM_PATH: &str = "./proxy.wasm";
 pub const CONFIG_WASM_PATH: &str = "./conf.json";
 

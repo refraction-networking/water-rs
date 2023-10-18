@@ -18,19 +18,16 @@ use std::{
 
 // =================== EXTERNAL CRATES ===================
 use anyhow::Result;
-use bincode;
 use byte_string::ByteStr;
 use bytes::Buf;
 use futures::ready;
 use lazy_static::lazy_static;
 use pin_project::pin_project;
-use serde_json;
 use tokio::{
     io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, ReadBuf},
     net::{TcpListener, TcpStream},
 };
 use tracing::{debug, info, Level};
-use tracing_subscriber;
 
 // =================== MODULES ===================
 pub mod aead;

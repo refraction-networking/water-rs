@@ -1,14 +1,11 @@
 use super::*;
 
 use tokio::{
-    io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt},
+    io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
-    time,
-    time::timeout,
 };
-use tracing_subscriber::fmt::format;
 
-use std::net::{SocketAddr, TcpStream as StdTcpStream, ToSocketAddrs};
+use std::net::{SocketAddr, ToSocketAddrs};
 
 // ----------------------- Listener methods -----------------------
 #[export_name = "v1_listen"]
@@ -40,10 +37,7 @@ fn _listener_creation() -> Result<i32, std::io::Error> {
     let address = encoded.as_ptr() as u32;
     let size = encoded.len() as u32;
 
-    let mut fd = -1;
-    unsafe {
-        fd = create_listen(address, size);
-    };
+    let fd = unsafe { create_listen(address, size) };
 
     if fd < 0 {
         return Err(std::io::Error::new(
@@ -218,7 +212,7 @@ async fn handle_incoming(mut stream: TcpStream) -> std::io::Result<()> {
     tcp_dialer.config.remote_address = addr.ip().to_string();
     tcp_dialer.config.remote_port = addr.port() as u32;
 
-    let tcp_fd = tcp_dialer.dial().expect("Failed to dial");
+    let _tcp_fd = tcp_dialer.dial().expect("Failed to dial");
 
     let target_stream = match tcp_dialer.file_conn.outbound_conn.file.unwrap() {
         ConnStream::TcpStream(s) => s,
@@ -270,7 +264,7 @@ async fn handle_incoming(mut stream: TcpStream) -> std::io::Result<()> {
                     break;
                 }
                 Ok(n) => {
-                    if let Err(_) = target_write.write_all(&buffer[0..n]).await {
+                    if (target_write.write_all(&buffer[0..n]).await).is_err() {
                         break;
                     }
                 }
@@ -287,7 +281,7 @@ async fn handle_incoming(mut stream: TcpStream) -> std::io::Result<()> {
                     break;
                 }
                 Ok(n) => {
-                    if let Err(_) = client_write.write_all(&buffer[0..n]).await {
+                    if (client_write.write_all(&buffer[0..n]).await).is_err() {
                         break;
                     }
                 }

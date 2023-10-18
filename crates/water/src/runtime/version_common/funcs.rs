@@ -18,11 +18,9 @@ pub fn export_config(linker: &mut Linker<Host>, config_file: String) {
                 let wasi_file = wasmtime_wasi::sync::file::File::from_cap_std(wasi_file);
 
                 let ctx: &mut WasiCtx = caller.data_mut().preview1_ctx.as_mut().unwrap();
-                let config_fd = ctx
+                ctx
                     .push_file(Box::new(wasi_file), FileAccessMode::all())
-                    .expect("Error with pushing file") as i32;
-
-                config_fd
+                    .expect("Error with pushing file") as i32
             },
         )
         .unwrap();

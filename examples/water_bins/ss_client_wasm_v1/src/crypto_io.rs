@@ -84,7 +84,7 @@ where
     ) -> Poll<ProtocolResult<()>> {
         let CryptoStream {
             ref mut dec,
-            ref mut enc,
+            // ref mut enc,
             ref mut stream,
             ref mut has_handshaked,
             ..
@@ -154,8 +154,6 @@ impl<S: AsyncRead + AsyncWrite> CryptoStream<S> {
 
     /// Create a new CryptoStream with the underlying stream connection
     pub fn from_stream_with_identity(stream: S, method: CipherKind, key: &[u8]) -> CryptoStream<S> {
-        let category = method.category();
-
         let prev_len = method.salt_len();
 
         let iv = {
@@ -176,24 +174,25 @@ impl<S: AsyncRead + AsyncWrite> CryptoStream<S> {
 }
 
 /// Generate nonce (IV or SALT)
-pub fn generate_nonce(method: CipherKind, nonce: &mut [u8], unique: bool) {
+pub fn generate_nonce(_method: CipherKind, nonce: &mut [u8], _unique: bool) {
     if nonce.is_empty() {
         return;
     }
 
-    loop {
-        random_iv_or_salt(nonce);
+    random_iv_or_salt(nonce);
 
-        // Salt already exists, generate a new one. FIXME: ignore replay attack for now
-        if unique && false {
-            continue;
-        }
+    // loop {
+    //     random_iv_or_salt(nonce);
 
-        break;
-    }
+    //     // Salt already exists, generate a new one. FIXME: ignore replay attack for now
+    //     if unique && false {
+    //         continue;
+    //     }
+
+    //     break;
+    // }
 }
 
 pub fn create_cipher(key: &[u8], nonce: &[u8], kind: CipherKind) -> Cipher {
-    let cipher = Cipher::new(kind, key, nonce);
-    return cipher;
+    Cipher::new(kind, key, nonce)
 }

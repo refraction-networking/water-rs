@@ -101,7 +101,7 @@ impl Socks5Handler {
         }
     }
 
-    pub async fn socks5_greet(self: &mut Self) -> Result<(), std::io::Error> {
+    pub async fn socks5_greet(&mut self) -> Result<(), std::io::Error> {
         // Read the SOCKS5 greeting
         self.stream
             .read_buf(&mut self.buffer)
@@ -142,7 +142,7 @@ impl Socks5Handler {
         Ok(())
     }
 
-    pub async fn socks5_get_target(self: &mut Self) -> Result<Address, std::io::Error> {
+    pub async fn socks5_get_target(&mut self) -> Result<Address, std::io::Error> {
         // Read the actual request
         self.stream
             .read_buf(&mut self.buffer)
@@ -214,10 +214,10 @@ impl Socks5Handler {
         Ok(target_addr)
     }
 
-    pub async fn socks5_response(self: &mut Self, buf: &mut BytesMut) {
+    pub async fn socks5_response(&mut self, buf: &mut BytesMut) {
         // Send the response header
         self.stream
-            .write_all(&buf)
+            .write_all(buf)
             .await
             .expect("Failed to write back to client's stream");
         info!("Responsed header to SOCKS5 client: {:?}", buf.to_vec());

@@ -118,8 +118,8 @@ impl WATERStream<Host> {
     pub fn connect(
         &mut self,
         conf: &WATERConfig,
-        addr: &str,
-        port: u16,
+        _addr: &str,
+        _port: u16,
     ) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERStream connecting...");
 
@@ -159,17 +159,17 @@ impl WATERStream<Host> {
         core._prepare(conf)?;
 
         // constructing a pair of UnixStream for communicating between WASM and Host
-        let (caller_end, water_end) = UnixStream::pair()?;
+        let (caller_io, water_io) = UnixStream::pair()?;
 
-        let water_end_file = unsafe { cap_std::fs::File::from_raw_fd(water_end.as_raw_fd()) };
+        let water_io_file = unsafe { cap_std::fs::File::from_raw_fd(water_io.as_raw_fd()) };
 
         // insert file here
-        let water_end_file = wasmtime_wasi::sync::file::File::from_cap_std(water_end_file);
+        let water_io_file = wasmtime_wasi::sync::file::File::from_cap_std(water_io_file);
 
-        std::mem::forget(water_end); // forget the water_end, so that it won't be closed
+        std::mem::forget(water_io); // forget the water_io, so that it won't be closed
 
         let ctx = core.store.data_mut().preview1_ctx.as_mut().unwrap();
-        let water_end_fd = ctx.push_file(Box::new(water_end_file), FileAccessMode::all())?;
+        let water_io_fd = ctx.push_file(Box::new(water_io_file), FileAccessMode::all())?;
 
         let water_bridging = match core.instance.get_func(&mut core.store, WATER_BRIDGING_FN) {
             Some(func) => func,
@@ -182,7 +182,7 @@ impl WATERStream<Host> {
         };
 
         // let params = vec![Val::I32(water_reader_fd as i32), Val::I32(water_writer_fd as i32)];
-        let params = vec![Val::I32(water_end_fd as i32)];
+        let params = vec![Val::I32(water_io_fd as i32)];
         match water_bridging.call(&mut core.store, &params, &mut []) {
             Ok(_) => {}
             Err(e) => {
@@ -215,12 +215,12 @@ impl WATERStream<Host> {
         };
 
         let runtime = WATERStream {
-            reader: reader,
-            writer: writer,
+            reader,
+            writer,
 
-            caller_io: caller_end,
+            caller_io,
 
-            core: core,
+            core,
         };
 
         Ok(runtime)

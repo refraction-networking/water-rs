@@ -108,8 +108,8 @@ impl WATERListener<Host> {
     pub fn listen(
         &mut self,
         conf: &WATERConfig,
-        addr: &str,
-        port: u16,
+        _addr: &str,
+        _port: u16,
     ) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERStream listening...");
 
@@ -140,19 +140,19 @@ impl WATERListener<Host> {
 
         // constructing 2 pairs of UnixStream for communicating between WASM and Host
         // returns (read_end, write_end) for caller
-        let (caller_read_end, water_write_end) = UnixStream::pair()?;
-        let (water_read_end, caller_write_end) = UnixStream::pair()?;
+        let (caller_reader, water_writer) = UnixStream::pair()?;
+        let (water_reader, caller_writer) = UnixStream::pair()?;
 
         let water_write_file =
-            unsafe { cap_std::fs::File::from_raw_fd(water_write_end.as_raw_fd()) };
-        let water_read_file = unsafe { cap_std::fs::File::from_raw_fd(water_read_end.as_raw_fd()) };
+            unsafe { cap_std::fs::File::from_raw_fd(water_writer.as_raw_fd()) };
+        let water_read_file = unsafe { cap_std::fs::File::from_raw_fd(water_reader.as_raw_fd()) };
 
         // insert file here
         let wasi_water_reader = wasmtime_wasi::sync::file::File::from_cap_std(water_read_file);
         let wasi_water_writer = wasmtime_wasi::sync::file::File::from_cap_std(water_write_file);
 
-        std::mem::forget(water_write_end);
-        std::mem::forget(water_read_end);
+        std::mem::forget(water_writer);
+        std::mem::forget(water_reader);
 
         let ctx = core.store.data_mut().preview1_ctx.as_mut().unwrap();
         let water_reader_fd = ctx.push_file(Box::new(wasi_water_reader), FileAccessMode::all())?;
@@ -204,13 +204,13 @@ impl WATERListener<Host> {
         };
 
         let runtime = WATERListener {
-            reader: reader,
-            writer: writer,
+            reader,
+            writer,
 
-            caller_reader: caller_read_end,
-            caller_writer: caller_write_end,
+            caller_reader,
+            caller_writer,
 
-            core: core,
+            core,
         };
 
         Ok(runtime)

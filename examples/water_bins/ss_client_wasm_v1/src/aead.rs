@@ -273,6 +273,7 @@ enum EncryptWriteState {
 }
 
 /// Writer wrapper that will encrypt data automatically
+#[allow(dead_code)]
 pub struct EncryptedWriter {
     cipher: Cipher,
     buffer: BytesMut,

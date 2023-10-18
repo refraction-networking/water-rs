@@ -13,8 +13,7 @@ impl WASMSharedConfig {
         let ptr = self as *const Self;
 
         let bytes_slice = unsafe { std::slice::from_raw_parts(ptr as *const u8, size) };
-        let bytes = bytes_slice.to_vec();
-        bytes
+        bytes_slice.to_vec()
     }
 
     // pub fn from_bytes(bytes: Vec<u8>) -> Option<Self> {
@@ -43,7 +42,6 @@ impl StreamConfig {
         let ptr = self as *const Self;
 
         let bytes_slice = unsafe { std::slice::from_raw_parts(ptr as *const u8, size) };
-        let bytes = bytes_slice.to_vec();
-        bytes
+        bytes_slice.to_vec()
     }
 }

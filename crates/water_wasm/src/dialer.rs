@@ -7,6 +7,12 @@ pub struct Dialer {
     pub config: Config,
 }
 
+impl Default for Dialer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Dialer {
     pub fn new() -> Self {
         Dialer {
@@ -18,10 +24,9 @@ impl Dialer {
     pub fn dial(&mut self) -> Result<i32, anyhow::Error> {
         info!("[WASM] running in dial func...");
 
-        let mut fd: i32 = -1;
 
         // FIXME: hardcoded the filename for now, make it a config later
-        fd = self.tcp_connect()?;
+        let fd: i32 = self.tcp_connect()?;
 
         if fd < 0 {
             eprintln!("failed to create connection to remote");
@@ -48,10 +53,9 @@ impl Dialer {
         let address = encoded.as_ptr() as u32;
         let size = encoded.len() as u32;
 
-        let mut fd = -1;
-        unsafe {
+        let fd = unsafe {
             // connect_tcp_unix(len, xxxx)
-            fd = connect_tcp(address, size);
+            connect_tcp(address, size)
         };
 
         if fd < 0 {
