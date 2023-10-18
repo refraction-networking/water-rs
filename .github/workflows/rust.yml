@@ -10,7 +10,32 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  format:
+    name: Verify code Fromatting
+    runs-on: "ubuntu-latest"
+    steps:
+    - uses: actions/checkout@v3
+    - name: Format
+      run: cargo fmt --all -- --check
+
+  lint:
+    name: Lint with clippy
+    needs: format
+    strategy:
+      fail-fast: true
+    runs-on: "ubuntu-latest"
+    env:
+      RUSTFLAGS: -Dwarnings
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Lint
+      run: cargo clippy --workspace --all-targets --verbose --all-features
+
   build:
+    name: Test and Build
+    needs: format
+    # needs: [format, lint]
     strategy:
       fail-fast: true
       matrix:
@@ -20,10 +45,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Format
-      run: cargo fmt --all -- --check
-    - name: Lint
-      run: cargo clippy --workspace --all-targets --verbose --all-features
     - name: Test
       run: cargo test --verbose --workspace --all-features
     - name: Build
