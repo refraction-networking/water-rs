@@ -1,5 +1,5 @@
-use water::globals::{CONFIG_WASM_PATH, MAIN, WASM_PATH};
 use water::config::WATERConfig;
+use water::globals::{CONFIG_WASM_PATH, MAIN, WASM_PATH};
 
 use clap::Parser;
 

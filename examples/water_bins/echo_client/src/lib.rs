@@ -1,15 +1,10 @@
 // =================== Imports & Modules =====================
-use std::{
-    io::Read,
-    os::fd::FromRawFd,
-    sync::Mutex,
-    vec,
-};
+use std::{io::Read, os::fd::FromRawFd, sync::Mutex, vec};
 
+use anyhow::Result;
 use bincode::{self};
 use lazy_static::lazy_static;
 use tracing::{info, Level};
-use anyhow::Result;
 
 use water_wasm::*;
 
@@ -125,15 +120,15 @@ pub fn _read() -> i64 {
     match DIALER.lock() {
         Ok(mut global_dialer) => {
             match global_dialer
-            .file_conn
-            ._read_from_outbound(&mut DefaultDecoder)
-        {
-            Ok(n) => n,
-            Err(e) => {
-                eprintln!("[WASM] > ERROR in _read: {}", e);
-                -1
+                .file_conn
+                ._read_from_outbound(&mut DefaultDecoder)
+            {
+                Ok(n) => n,
+                Err(e) => {
+                    eprintln!("[WASM] > ERROR in _read: {}", e);
+                    -1
+                }
             }
-        }
         }
         Err(e) => {
             eprintln!("[WASM] > ERROR: {}", e);

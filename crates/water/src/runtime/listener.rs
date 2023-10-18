@@ -143,8 +143,7 @@ impl WATERListener<Host> {
         let (caller_reader, water_writer) = UnixStream::pair()?;
         let (water_reader, caller_writer) = UnixStream::pair()?;
 
-        let water_write_file =
-            unsafe { cap_std::fs::File::from_raw_fd(water_writer.as_raw_fd()) };
+        let water_write_file = unsafe { cap_std::fs::File::from_raw_fd(water_writer.as_raw_fd()) };
         let water_read_file = unsafe { cap_std::fs::File::from_raw_fd(water_reader.as_raw_fd()) };
 
         // insert file here

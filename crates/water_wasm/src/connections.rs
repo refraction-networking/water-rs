@@ -57,9 +57,7 @@ impl ConnFile {
                 ConnStream::TcpStream(stream) => stream.write_all(buf).map_err(anyhow::Error::from),
                 ConnStream::File(stream) => stream.write_all(buf).map_err(anyhow::Error::from),
             },
-            None => {
-                Err(anyhow::anyhow!("[WASM] > ERROR: ConnFile's file is None"))
-            }
+            None => Err(anyhow::anyhow!("[WASM] > ERROR: ConnFile's file is None")),
         }
     }
 }
@@ -155,8 +153,7 @@ impl Connection {
 
         // NOTE: decode logic here
         let mut decoded = vec![0u8; 4096];
-        let len_after_decoding = match decoder.decode(&buf[..bytes_read as usize], &mut decoded)
-        {
+        let len_after_decoding = match decoder.decode(&buf[..bytes_read as usize], &mut decoded) {
             Ok(n) => n,
             Err(e) => {
                 // eprintln!("[WASM] > ERROR in _write when encoding: {:?}", e);
@@ -217,8 +214,7 @@ impl Connection {
 
         // NOTE: encode logic here
         let mut encoded = vec![0u8; 4096];
-        let len_after_encoding = match encoder.encode(&buf[..bytes_read as usize], &mut encoded)
-        {
+        let len_after_encoding = match encoder.encode(&buf[..bytes_read as usize], &mut encoded) {
             Ok(n) => n,
             Err(e) => {
                 // eprintln!("[WASM] > ERROR in _write when encoding: {:?}", e);

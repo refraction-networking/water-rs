@@ -40,10 +40,6 @@ pub struct StreamConfigV1 {
 // #[cfg(feature = "v1")]
 impl StreamConfigV1 {
     pub fn init(addr: String, port: u32, name: String) -> Self {
-        StreamConfigV1 {
-            addr,
-            port,
-            name,
-        }
+        StreamConfigV1 { addr, port, name }
     }
 }

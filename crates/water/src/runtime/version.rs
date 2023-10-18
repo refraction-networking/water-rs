@@ -1,7 +1,6 @@
 use std::fmt;
 use std::str::FromStr;
 
-
 pub enum Version {
     V0,
     V1,
@@ -25,7 +24,6 @@ impl Version {
     }
 }
 
-
 impl FromStr for Version {
     type Err = ();
 
@@ -38,7 +36,6 @@ impl FromStr for Version {
         }
     }
 }
-
 
 impl From<&Version> for &'static str {
     fn from(v: &Version) -> &'static str {

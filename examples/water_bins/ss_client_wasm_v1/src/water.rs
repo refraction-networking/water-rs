@@ -220,9 +220,7 @@ pub fn _listener_creation() -> Result<i32, std::io::Error> {
     let address = encoded.as_ptr() as u32;
     let size = encoded.len() as u32;
 
-    let fd = unsafe {
-        create_listen(address, size)
-    };
+    let fd = unsafe { create_listen(address, size) };
 
     if fd < 0 {
         return Err(std::io::Error::new(

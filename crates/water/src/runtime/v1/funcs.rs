@@ -23,7 +23,8 @@ pub fn export_tcp_connect(linker: &mut Linker<Host>) {
                 // Use the offset and size to get the relevant part of the memory.
                 let data = &mut mem_slice[ptr as usize..(ptr as usize + size as usize)];
 
-                let config: StreamConfig = bincode::deserialize(data).expect("Failed to deserialize");
+                let config: StreamConfig =
+                    bincode::deserialize(data).expect("Failed to deserialize");
 
                 let connect_file = File::Connect(ConnectFile::Tcp {
                     name: Some(config.name.clone().try_into().unwrap()),
@@ -81,7 +82,8 @@ pub fn export_tcplistener_create(linker: &mut Linker<Host>) {
                 // Use the offset and size to get the relevant part of the memory.
                 let data = &mut mem_slice[ptr as usize..(ptr as usize + size as usize)];
 
-                let config: StreamConfig = bincode::deserialize(data).expect("Failed to deserialize");
+                let config: StreamConfig =
+                    bincode::deserialize(data).expect("Failed to deserialize");
 
                 let listener_file = File::Listen(ListenFile::Tcp {
                     name: config.name.clone().try_into().unwrap(),
