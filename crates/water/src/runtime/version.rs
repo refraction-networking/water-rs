@@ -13,7 +13,7 @@ impl Version {
             _ => None, // Any other string results in None
         }
     }
-    
+
     pub fn as_str(&self) -> &'static str {
         match *self {
             Version::V0 => "V0",

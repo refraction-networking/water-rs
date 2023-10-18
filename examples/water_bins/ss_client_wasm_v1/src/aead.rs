@@ -1,10 +1,10 @@
 use super::*;
 
-use bytes::{BufMut, BytesMut, Bytes};
+use bytes::{BufMut, Bytes, BytesMut};
 
-use tokio::io::ReadBuf;
 use byte_string::ByteStr;
 use std::io::ErrorKind;
+use tokio::io::ReadBuf;
 
 use std::task::{self, Poll};
 
@@ -92,8 +92,12 @@ impl DecryptedReader {
                     self.state = DecryptReadState::BufferedData { pos: 0 };
                 }
                 DecryptReadState::BufferedData { ref mut pos } => {
-                    info!("buffered data, pos: {}, buffer len: {}", pos, self.buffer.len());
-                    
+                    info!(
+                        "buffered data, pos: {}, buffer len: {}",
+                        pos,
+                        self.buffer.len()
+                    );
+
                     if *pos < self.buffer.len() {
                         let buffered = &self.buffer[*pos..];
 
@@ -113,7 +117,12 @@ impl DecryptedReader {
         }
     }
 
-    fn poll_read_salt<S>(&mut self, cx: &mut task::Context<'_>, stream: &mut S, key: &[u8]) -> Poll<ProtocolResult<()>>
+    fn poll_read_salt<S>(
+        &mut self,
+        cx: &mut task::Context<'_>,
+        stream: &mut S,
+        key: &[u8],
+    ) -> Poll<ProtocolResult<()>>
     where
         S: AsyncRead + Unpin + ?Sized,
     {
@@ -125,7 +134,7 @@ impl DecryptedReader {
         }
 
         let salt = &self.buffer[..salt_len];
-        
+
         // #442 Remember salt in filter after first successful decryption.
         // If we check salt right here will allow attacker to flood our filter and eventually block all of our legitimate clients' requests.
         self.salt = Some(Bytes::copy_from_slice(salt));
@@ -139,7 +148,11 @@ impl DecryptedReader {
         Ok(()).into()
     }
 
-    fn poll_read_length<S>(&mut self, cx: &mut task::Context<'_>, stream: &mut S) -> Poll<ProtocolResult<Option<usize>>>
+    fn poll_read_length<S>(
+        &mut self,
+        cx: &mut task::Context<'_>,
+        stream: &mut S,
+    ) -> Poll<ProtocolResult<Option<usize>>>
     where
         S: AsyncRead + Unpin + ?Sized,
     {
@@ -189,7 +202,12 @@ impl DecryptedReader {
         Ok(()).into()
     }
 
-    fn poll_read_exact<S>(&mut self, cx: &mut task::Context<'_>, stream: &mut S, size: usize) -> Poll<io::Result<usize>>
+    fn poll_read_exact<S>(
+        &mut self,
+        cx: &mut task::Context<'_>,
+        stream: &mut S,
+        size: usize,
+    ) -> Poll<io::Result<usize>>
     where
         S: AsyncRead + Unpin + ?Sized,
     {
@@ -199,15 +217,16 @@ impl DecryptedReader {
             let remaining = size - self.buffer.len();
 
             debug!("buffer was {:?}", ByteStr::new(&self.buffer));
-            
+
             let buffer = &mut self.buffer.chunk_mut()[..remaining];
 
-            let mut read_buf =
-                ReadBuf::uninit(unsafe { slice::from_raw_parts_mut(buffer.as_mut_ptr() as *mut _, remaining) });
+            let mut read_buf = ReadBuf::uninit(unsafe {
+                slice::from_raw_parts_mut(buffer.as_mut_ptr() as *mut _, remaining)
+            });
             ready!(Pin::new(&mut *stream).poll_read(cx, &mut read_buf))?;
 
             let n = read_buf.filled().len();
-            
+
             if n == 0 {
                 if !self.buffer.is_empty() {
                     return Err(ErrorKind::UnexpectedEof.into()).into();
@@ -215,7 +234,7 @@ impl DecryptedReader {
                     return Ok(0).into();
                 }
             }
-            
+
             unsafe {
                 self.buffer.advance_mut(n);
             }
@@ -330,7 +349,8 @@ impl EncryptedWriter {
                 }
                 EncryptWriteState::Writing { ref mut pos } => {
                     while *pos < self.buffer.len() {
-                        let n = ready!(Pin::new(&mut *stream).poll_write(cx, &self.buffer[*pos..]))?;
+                        let n =
+                            ready!(Pin::new(&mut *stream).poll_write(cx, &self.buffer[*pos..]))?;
                         if n == 0 {
                             return Err(ErrorKind::UnexpectedEof.into()).into();
                         }

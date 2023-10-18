@@ -9,7 +9,13 @@ pub struct WATERConfig {
 }
 
 impl WATERConfig {
-    pub fn init(wasm_path: String, entry_fn: String, config_wasm: String, client_type: u32, debug: bool) -> Result<Self, anyhow::Error> {
+    pub fn init(
+        wasm_path: String,
+        entry_fn: String,
+        config_wasm: String,
+        client_type: u32,
+        debug: bool,
+    ) -> Result<Self, anyhow::Error> {
         Ok(WATERConfig {
             filepath: wasm_path,
             entry_fn: entry_fn,

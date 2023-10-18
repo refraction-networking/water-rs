@@ -25,7 +25,11 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
 {
     #[inline]
-    fn poll_read(self: Pin<&mut Self>, cx: &mut task::Context<'_>, buf: &mut ReadBuf<'_>) -> Poll<io::Result<()>> {
+    fn poll_read(
+        self: Pin<&mut Self>,
+        cx: &mut task::Context<'_>,
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
         #[allow(unused_mut)]
         let mut this = self.project();
         return this.stream.poll_read_decrypted(cx, buf).map_err(Into::into);
@@ -36,7 +40,11 @@ impl<S> AsyncWrite for ProxyClientStream<S>
 where
     S: AsyncRead + AsyncWrite + Unpin,
 {
-    fn poll_write(self: Pin<&mut Self>, cx: &mut task::Context<'_>, buf: &[u8]) -> Poll<Result<usize, io::Error>> {
+    fn poll_write(
+        self: Pin<&mut Self>,
+        cx: &mut task::Context<'_>,
+        buf: &[u8],
+    ) -> Poll<Result<usize, io::Error>> {
         let this = self.project();
 
         loop {
@@ -56,7 +64,10 @@ where
                     return Ok(buf.len()).into();
                 }
                 ProxyClientStreamWriteState::Connected => {
-                    return this.stream.poll_write_encrypted(cx, buf).map_err(Into::into);
+                    return this
+                        .stream
+                        .poll_write_encrypted(cx, buf)
+                        .map_err(Into::into);
                 }
             }
         }
@@ -68,25 +79,29 @@ where
     }
 
     #[inline]
-    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Result<(), io::Error>> {
+    fn poll_shutdown(
+        self: Pin<&mut Self>,
+        cx: &mut task::Context<'_>,
+    ) -> Poll<Result<(), io::Error>> {
         self.project().stream.poll_shutdown(cx).map_err(Into::into)
     }
 }
 
-impl<S> ProxyClientStream<S> 
+impl<S> ProxyClientStream<S>
 where
     S: AsyncRead + AsyncWrite + Unpin,
 {
-    pub fn from_stream<A>(stream: S, addr: A, method: CipherKind, key: &[u8]) -> ProxyClientStream<S>
+    pub fn from_stream<A>(
+        stream: S,
+        addr: A,
+        method: CipherKind,
+        key: &[u8],
+    ) -> ProxyClientStream<S>
     where
         A: Into<Address>,
     {
         let addr = addr.into();
-        let stream = CryptoStream::from_stream_with_identity(
-            stream,
-            method,
-            key,
-        );
+        let stream = CryptoStream::from_stream_with_identity(stream, method, key);
 
         let reader_state = ProxyClientStreamReadState::Established;
 
@@ -96,7 +111,6 @@ where
             reader_state,
         }
     }
-
 }
 
 #[inline]

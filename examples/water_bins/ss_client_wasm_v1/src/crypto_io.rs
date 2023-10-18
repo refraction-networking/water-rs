@@ -4,7 +4,8 @@ use std::task::{self};
 
 lazy_static! {
     pub static ref ENC_CIPHER: Mutex<Cipher> = Mutex::new(Cipher::new(CipherKind::NONE, &[], &[]));
-    pub static ref DEC_CIPHER: Mutex<DecryptedReader> = Mutex::new(DecryptedReader::new(CipherKind::NONE, &[]));
+    pub static ref DEC_CIPHER: Mutex<DecryptedReader> =
+        Mutex::new(DecryptedReader::new(CipherKind::NONE, &[]));
 }
 
 /// AEAD Protocol Error
@@ -89,7 +90,7 @@ where
             ..
         } = *self;
         ready!(dec.poll_read_decrypted(cx, stream, buf))?;
-        
+
         if !*has_handshaked && dec.handshaked() {
             *has_handshaked = true;
         }
@@ -114,7 +115,8 @@ where
             ref mut stream,
             ..
         } = *self;
-        enc.poll_write_encrypted(cx, stream, buf).map_err(Into::into)
+        enc.poll_write_encrypted(cx, stream, buf)
+            .map_err(Into::into)
     }
 }
 
@@ -125,16 +127,19 @@ where
     /// Polls `flush` on the underlying stream
     #[inline]
     pub fn poll_flush(&mut self, cx: &mut task::Context<'_>) -> Poll<ProtocolResult<()>> {
-        Pin::new(&mut self.stream).poll_flush(cx).map_err(Into::into)
+        Pin::new(&mut self.stream)
+            .poll_flush(cx)
+            .map_err(Into::into)
     }
 
     /// Polls `shutdown` on the underlying stream
     #[inline]
     pub fn poll_shutdown(&mut self, cx: &mut task::Context<'_>) -> Poll<ProtocolResult<()>> {
-        Pin::new(&mut self.stream).poll_shutdown(cx).map_err(Into::into)
+        Pin::new(&mut self.stream)
+            .poll_shutdown(cx)
+            .map_err(Into::into)
     }
 }
-
 
 impl<S: AsyncRead + AsyncWrite> CryptoStream<S> {
     pub fn new(stream: S, method: CipherKind, key: &[u8], nonce: &[u8]) -> CryptoStream<S> {
@@ -148,11 +153,7 @@ impl<S: AsyncRead + AsyncWrite> CryptoStream<S> {
     }
 
     /// Create a new CryptoStream with the underlying stream connection
-    pub fn from_stream_with_identity(
-        stream: S,
-        method: CipherKind,
-        key: &[u8],
-    ) -> CryptoStream<S> {
+    pub fn from_stream_with_identity(stream: S, method: CipherKind, key: &[u8]) -> CryptoStream<S> {
         let category = method.category();
 
         let prev_len = method.salt_len();

@@ -12,13 +12,19 @@ env:
 jobs:
   build:
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         os: [ "ubuntu-latest", "macos-latest" ]
+
     runs-on: ${{ matrix.os }}
+
     steps:
     - uses: actions/checkout@v3
+    - name: Format
+      run: cargo fmt --all -- --check
+    - name: Lint
+      run: cargo clippy --workspace --all-targets --verbose --all-features
+    - name: Test
+      run: cargo test --verbose --workspace --all-features
     - name: Build
       run: cargo build --verbose
-    - name: Test
-      run: cargo test --verbose

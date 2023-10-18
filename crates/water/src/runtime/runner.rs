@@ -9,24 +9,26 @@ impl WATERRunner<Host> {
     pub fn run(&mut self, conf: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERRunner running...");
 
-        let fnc = self.core.instance.get_func(&mut self.core.store, &conf.entry_fn).unwrap();
+        let fnc = self
+            .core
+            .instance
+            .get_func(&mut self.core.store, &conf.entry_fn)
+            .unwrap();
         match fnc.call(&mut self.core.store, &[], &mut []) {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(e) => return Err(anyhow::Error::msg(format!("run function failed: {}", e))),
         }
-        
+
         Ok(())
     }
-    
+
     pub fn init(conf: &WATERConfig) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERRunner init...");
 
         let mut core = H2O::init(conf)?;
         core._prepare(conf)?;
-        
-        let runtime = WATERRunner {
-            core,
-        };
+
+        let runtime = WATERRunner { core };
 
         Ok(runtime)
     }

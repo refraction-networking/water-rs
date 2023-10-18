@@ -21,5 +21,8 @@ impl Encoder for DefaultEncoder {
 }
 
 pub trait AsyncEncodeWriter {
-    fn poll_write_encrypted<S: AsyncWrite + ?Sized>(&mut self, stream: &mut S) -> Result<u32, anyhow::Error>;
+    fn poll_write_encrypted<S: AsyncWrite + ?Sized>(
+        &mut self,
+        stream: &mut S,
+    ) -> Result<u32, anyhow::Error>;
 }

@@ -1,8 +1,7 @@
+use water::globals::{CONFIG_WASM_PATH, MAIN, WASM_PATH};
 use water::{config::WATERConfig, runtime};
-use water::globals::{WASM_PATH, MAIN, CONFIG_WASM_PATH};
 
 use clap::Parser;
-
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -31,7 +30,6 @@ struct Args {
     #[arg(short, long, default_value_t = false)]
     debug: bool,
 }
-
 
 impl From<Args> for WATERConfig {
     fn from(args: Args) -> Self {
@@ -66,9 +64,9 @@ pub fn execute(conf: WATERConfig) -> Result<(), anyhow::Error> {
     //     // keep reading from stdin and call read and write function from water_client.stream
     //     let mut buf = String::new();
     //     std::io::stdin().read_line(&mut buf)?;
-        
+
     //     water_client.write(buf.as_bytes())?;
-        
+
     //     let mut buf = vec![0; 1024];
     //     water_client.read(&mut buf)?;
 

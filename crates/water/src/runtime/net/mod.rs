@@ -1,7 +1,7 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 
-use std::ops::Deref;
 use std::convert::{TryFrom, TryInto};
+use std::ops::Deref;
 
 // ========= Definition for files shared between WASM & Host for creating connections ===========
 // TODO: migrate these code to a src file later
@@ -83,7 +83,6 @@ pub enum File {
     // /// File descriptor of stderr
     // #[serde(rename = "stderr")]
     // Stderr(StdioFile),
-
     /// File descriptor of a listen socket
     #[serde(rename = "listen")]
     Listen(ListenFile),

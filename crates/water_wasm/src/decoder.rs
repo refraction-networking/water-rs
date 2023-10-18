@@ -21,5 +21,9 @@ impl Decoder for DefaultDecoder {
 }
 
 pub trait AsyncDecodeReader {
-    fn poll_read_decrypted<S: AsyncRead + ?Sized>(&mut self, stream: &mut S, buf: &mut [u8]) -> Result<u32, anyhow::Error>;
+    fn poll_read_decrypted<S: AsyncRead + ?Sized>(
+        &mut self,
+        stream: &mut S,
+        buf: &mut [u8],
+    ) -> Result<u32, anyhow::Error>;
 }

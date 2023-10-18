@@ -1,20 +1,19 @@
-
 // lib.rs
 // export all modules
 pub mod config;
-pub mod dialer;
 pub mod connections;
-pub mod version;
-pub mod encoder;
 pub mod decoder;
+pub mod dialer;
+pub mod encoder;
+pub mod version;
 // pub mod net;
 // pub mod listener_in_wasm;
 
 pub use config::*;
-pub use dialer::*;
 pub use connections::*;
-pub use encoder::*;
 pub use decoder::*;
+pub use dialer::*;
+pub use encoder::*;
 // pub use net::*;
 // pub use listener_in_wasm::*;
 
@@ -29,12 +28,11 @@ use std::{
     vec,
 };
 
-use tracing::{info, debug};
 use bincode::{self};
+use tracing::{debug, info};
 
 use anyhow::Result;
-use serde::{Serialize, Deserialize};
-
+use serde::{Deserialize, Serialize};
 
 // TODO: move these to speicific implementations, shouldn't be in the crate lib
 // =================== WASM Imports =====================

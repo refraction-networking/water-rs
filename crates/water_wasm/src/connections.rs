@@ -24,10 +24,7 @@ pub struct ConnFile {
 impl ConnFile {
     // A default constructor for ConnFile
     pub fn new() -> Self {
-        ConnFile {
-            fd: -1,
-            file: None,
-        }
+        ConnFile { fd: -1, file: None }
     }
 
     pub fn read(&mut self, buf: &mut [u8]) -> Result<i64, anyhow::Error> {
@@ -36,13 +33,11 @@ impl ConnFile {
                 let bytes_read = match stream {
                     ConnStream::TcpStream(stream) => {
                         stream.read(buf).map_err(anyhow::Error::from)?
-                    },
-                    ConnStream::File(stream) => {
-                        stream.read(buf).map_err(anyhow::Error::from)?
-                    },
+                    }
+                    ConnStream::File(stream) => stream.read(buf).map_err(anyhow::Error::from)?,
                 };
                 Ok(bytes_read as i64)
-            },
+            }
             None => {
                 eprintln!("[WASM] > ERROR: ConnFile's file is None");
                 Err(anyhow::anyhow!("ConnFile's file is None"))
@@ -52,11 +47,9 @@ impl ConnFile {
 
     pub fn write(&mut self, buf: &[u8]) -> Result<(), anyhow::Error> {
         match &mut self.file {
-            Some(stream) => {
-                match stream {
-                    ConnStream::TcpStream(stream) => stream.write_all(buf).map_err(anyhow::Error::from),
-                    ConnStream::File(stream) => stream.write_all(buf).map_err(anyhow::Error::from),
-                }
+            Some(stream) => match stream {
+                ConnStream::TcpStream(stream) => stream.write_all(buf).map_err(anyhow::Error::from),
+                ConnStream::File(stream) => stream.write_all(buf).map_err(anyhow::Error::from),
             },
             None => {
                 return Err(anyhow::anyhow!("[WASM] > ERROR: ConnFile's file is None"));
@@ -129,7 +122,10 @@ impl Connection {
     // }
 
     /// this _read function is triggered by the Host to read from the remote connection
-    pub fn _read_from_outbound<D: Decoder>(self: &mut Self, decoder: &mut D) -> Result<i64, anyhow::Error> {
+    pub fn _read_from_outbound<D: Decoder>(
+        self: &mut Self,
+        decoder: &mut D,
+    ) -> Result<i64, anyhow::Error> {
         debug!("[WASM] running in _read_from_net");
 
         let mut buf = vec![0u8; 4096];
@@ -138,36 +134,53 @@ impl Connection {
             Err(e) => {
                 // eprintln!("[WASM] > ERROR in _read when reading from outbound: {:?}", e);
                 // return -1; // Or another sentinel value to indicate error}
-                return Err(anyhow::anyhow!("[WASM] > ERROR in _read when reading from outbound: {:?}", e));
+                return Err(anyhow::anyhow!(
+                    "[WASM] > ERROR in _read when reading from outbound: {:?}",
+                    e
+                ));
             }
         };
 
         // NOTE: decode logic here
         let mut decoded = vec![0u8; 4096];
-        let len_after_decoding = match decoder.decode(&mut buf[..bytes_read as usize], &mut decoded) {
-            Ok(n) => { n },
+        let len_after_decoding = match decoder.decode(&mut buf[..bytes_read as usize], &mut decoded)
+        {
+            Ok(n) => n,
             Err(e) => {
                 // eprintln!("[WASM] > ERROR in _write when encoding: {:?}", e);
                 // return -1; // Or another sentinel value to indicate error
-                return Err(anyhow::anyhow!("[WASM] > ERROR in _write when encoding: {:?}", e));
+                return Err(anyhow::anyhow!(
+                    "[WASM] > ERROR in _write when encoding: {:?}",
+                    e
+                ));
             }
         };
 
-        match self.inbound_conn.write(decoded[..len_after_decoding as usize].as_ref()) {
-            Ok(_) => {},
+        match self
+            .inbound_conn
+            .write(decoded[..len_after_decoding as usize].as_ref())
+        {
+            Ok(_) => {}
             Err(e) => {
                 // eprintln!("[WASM] > ERROR in _read when writing to inbound: {:?}", e);
                 // return -1; // Or another sentinel value to indicate error
-                return Err(anyhow::anyhow!("[WASM] > ERROR in _read when writing to inbound: {:?}", e));
+                return Err(anyhow::anyhow!(
+                    "[WASM] > ERROR in _read when writing to inbound: {:?}",
+                    e
+                ));
             }
         }
 
         Ok(len_after_decoding as i64)
     }
 
-    pub fn _write_2_outbound<E: Encoder>(self: &mut Self, encoder: &mut E, bytes_write: i64) -> Result<i64, anyhow::Error> {
+    pub fn _write_2_outbound<E: Encoder>(
+        self: &mut Self,
+        encoder: &mut E,
+        bytes_write: i64,
+    ) -> Result<i64, anyhow::Error> {
         debug!("[WASM] running in _write_2_net");
-    
+
         let mut bytes_read: i64 = 0;
         let mut buf = vec![0u8; 4096];
         loop {
@@ -176,50 +189,61 @@ impl Connection {
                 Err(e) => {
                     // eprintln!("[WASM] > ERROR in _read when reading from inbound: {:?}", e);
                     // return -1; // Or another sentinel value to indicate error
-                    return Err(anyhow::anyhow!("[WASM] > ERROR in _read when reading from inbound: {:?}", e));
+                    return Err(anyhow::anyhow!(
+                        "[WASM] > ERROR in _read when reading from inbound: {:?}",
+                        e
+                    ));
                 }
             };
-    
+
             bytes_read += read;
-    
+
             if read == 0 || bytes_read == bytes_write {
                 break;
             }
         }
-    
+
         // NOTE: encode logic here
         let mut encoded = vec![0u8; 4096];
-        let len_after_encoding = match encoder.encode(&mut buf[..bytes_read as usize], &mut encoded) {
-            Ok(n) => { n },
+        let len_after_encoding = match encoder.encode(&mut buf[..bytes_read as usize], &mut encoded)
+        {
+            Ok(n) => n,
             Err(e) => {
                 // eprintln!("[WASM] > ERROR in _write when encoding: {:?}", e);
                 // return -1; // Or another sentinel value to indicate error
-                return Err(anyhow::anyhow!("[WASM] > ERROR in _write when encoding: {:?}", e));
+                return Err(anyhow::anyhow!(
+                    "[WASM] > ERROR in _write when encoding: {:?}",
+                    e
+                ));
             }
         };
-    
-        match self.outbound_conn.write(encoded[..len_after_encoding as usize].as_ref()) {
-            Ok(_) => {},
+
+        match self
+            .outbound_conn
+            .write(encoded[..len_after_encoding as usize].as_ref())
+        {
+            Ok(_) => {}
             Err(e) => {
                 // eprintln!("[WASM] > ERROR in _read when writing to outbound: {:?}", e);
                 // return -1; // Or another sentinel value to indicate error
-                return Err(anyhow::anyhow!("[WASM] > ERROR in _read when writing to outbound: {:?}", e));
+                return Err(anyhow::anyhow!(
+                    "[WASM] > ERROR in _read when writing to outbound: {:?}",
+                    e
+                ));
             }
         }
-        
+
         Ok(len_after_encoding as i64)
     }
 
     pub fn close_inbound(self: &mut Self) {
         match &mut self.inbound_conn.file {
-            Some(stream) => {
-                match stream {
-                    ConnStream::TcpStream(stream) => {
-                        stream.shutdown(std::net::Shutdown::Both).unwrap();
-                    },
-                    ConnStream::File(stream) => {
-                        stream.sync_all().unwrap();
-                    },
+            Some(stream) => match stream {
+                ConnStream::TcpStream(stream) => {
+                    stream.shutdown(std::net::Shutdown::Both).unwrap();
+                }
+                ConnStream::File(stream) => {
+                    stream.sync_all().unwrap();
                 }
             },
             None => {
@@ -232,14 +256,12 @@ impl Connection {
 
     pub fn close_outbound(self: &mut Self) {
         match &mut self.outbound_conn.file {
-            Some(stream) => {
-                match stream {
-                    ConnStream::TcpStream(stream) => {
-                        stream.shutdown(std::net::Shutdown::Both).unwrap();
-                    },
-                    ConnStream::File(stream) => {
-                        stream.sync_all().unwrap();
-                    },
+            Some(stream) => match stream {
+                ConnStream::TcpStream(stream) => {
+                    stream.shutdown(std::net::Shutdown::Both).unwrap();
+                }
+                ConnStream::File(stream) => {
+                    stream.sync_all().unwrap();
                 }
             },
             None => {

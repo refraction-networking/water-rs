@@ -1,31 +1,31 @@
 // =================== Imports & Modules =====================
 use std::{
     io::{self, Read, Write},
-    os::fd::IntoRawFd,
     os::fd::FromRawFd,
+    os::fd::IntoRawFd,
     sync::Mutex,
     vec,
 };
 
 use tokio::{
-    io::{AsyncRead, AsyncWrite, AsyncReadExt, AsyncWriteExt},
+    io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt},
     net::{TcpListener, TcpStream},
     time,
     time::timeout,
 };
 
+use bincode::{self};
 use lazy_static::lazy_static;
 use serde_json;
-use tracing::{info, Level, debug};
+use tracing::{debug, info, Level};
 use tracing_subscriber;
-use bincode::{self};
 
+use anyhow::{Context, Result};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::fs::File;
 use std::mem;
-use anyhow::{Context, Result};
-use serde::{Serialize, Deserialize, de::DeserializeOwned};
-use tokio_util::codec::{AnyDelimiterCodec, Framed, FramedParts};
 use std::time::Duration;
+use tokio_util::codec::{AnyDelimiterCodec, Framed, FramedParts};
 
 use water_wasm::*;
 
@@ -41,11 +41,9 @@ lazy_static! {
 #[export_name = "_init"]
 pub fn _init(debug: bool) {
     if debug {
-        tracing_subscriber::fmt()
-            .with_max_level(Level::INFO)
-            .init();
+        tracing_subscriber::fmt().with_max_level(Level::INFO).init();
     }
-    
+
     info!("[WASM] running in _init");
 }
 
@@ -59,7 +57,10 @@ pub fn _water_bridging(fd: i32) {
         }
     };
 
-    global_dialer.file_conn.set_inbound(fd, ConnStream::File(unsafe { std::fs::File::from_raw_fd(fd) }));
+    global_dialer.file_conn.set_inbound(
+        fd,
+        ConnStream::File(unsafe { std::fs::File::from_raw_fd(fd) }),
+    );
 }
 
 #[export_name = "_set_outbound"]
@@ -72,7 +73,10 @@ pub fn _water_bridging_out(fd: i32) {
         }
     };
 
-    global_dialer.file_conn.set_outbound(fd, ConnStream::TcpStream(unsafe { std::net::TcpStream::from_raw_fd(fd) }));
+    global_dialer.file_conn.set_outbound(
+        fd,
+        ConnStream::TcpStream(unsafe { std::net::TcpStream::from_raw_fd(fd) }),
+    );
 }
 
 #[export_name = "_config"]
@@ -98,12 +102,15 @@ pub fn _process_config(fd: i32) {
                     return;
                 }
             };
-        
+
             // global_dialer.file_conn.config = config.clone();
             global_dialer.config = config;
-        },
+        }
         Err(e) => {
-            eprintln!("[WASM] > WASM _process_config falied reading path ERROR: {}", e);
+            eprintln!(
+                "[WASM] > WASM _process_config falied reading path ERROR: {}",
+                e
+            );
             return;
         }
     };
@@ -119,7 +126,10 @@ pub fn _write(bytes_write: i64) -> i64 {
         }
     };
 
-    match global_dialer.file_conn._write_2_outbound(&mut DefaultEncoder, bytes_write) {
+    match global_dialer
+        .file_conn
+        ._write_2_outbound(&mut DefaultEncoder, bytes_write)
+    {
         Ok(n) => n,
         Err(e) => {
             eprintln!("[WASM] > ERROR in _write: {}", e);
@@ -138,7 +148,10 @@ pub fn _read() -> i64 {
         }
     };
 
-    match global_dialer.file_conn._read_from_outbound(&mut DefaultDecoder) {
+    match global_dialer
+        .file_conn
+        ._read_from_outbound(&mut DefaultDecoder)
+    {
         Ok(n) => n,
         Err(e) => {
             eprintln!("[WASM] > ERROR in _read: {}", e);
@@ -158,7 +171,7 @@ pub fn _dial() {
     };
 
     match global_dialer.dial() {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(e) => {
             eprintln!("[WASM] > ERROR in _dial: {}", e);
             return;

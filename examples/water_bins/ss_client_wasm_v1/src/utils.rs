@@ -165,8 +165,7 @@ where
                     Ok(..) => {
                         info!(
                             "copy bidirection ends, a_to_b: {:?}, b_to_a: {:?}",
-                            self.a_to_b,
-                            self.b_to_a
+                            self.a_to_b, self.b_to_a
                         );
                     }
                     Err(ref err) => {

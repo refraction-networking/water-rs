@@ -33,27 +33,23 @@ use tracing::{debug, info, Level};
 use tracing_subscriber;
 
 // =================== MODULES ===================
-pub mod water;
 pub mod aead;
-pub mod socks5;
-pub mod crypto_io;
 pub mod client;
+pub mod crypto_io;
+pub mod socks5;
 pub mod utils;
+pub mod water;
 
 // =================== DEPENDENCIES FROM MODULES ===================
+use aead::{DecryptedReader, EncryptedWriter};
+use client::*;
+use crypto_io::*;
 use socks5::*;
 use utils::*;
-use crypto_io::*;
-use client::*;
 use water_wasm::*;
-use aead::{DecryptedReader, EncryptedWriter};
 
 // =================== SHADOWSOCKS_CRYPTO ===================
-use shadowsocks_crypto::{
-    v1::Cipher,
-    v1::random_iv_or_salt,
-    CipherKind,
-};
+use shadowsocks_crypto::{v1::random_iv_or_salt, v1::Cipher, CipherKind};
 
 // Export version info
 #[export_name = "V1"]

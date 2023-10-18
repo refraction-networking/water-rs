@@ -48,7 +48,9 @@ pub fn get_addr_len(atyp: &Address) -> usize {
 pub fn write_address<B: BufMut>(addr: &Address, buf: &mut B) {
     match *addr {
         Address::SocketAddress(ref addr) => write_socket_address(addr, buf),
-        Address::DomainNameAddress(ref dnaddr, ref port) => write_domain_name_address(dnaddr, *port, buf),
+        Address::DomainNameAddress(ref dnaddr, ref port) => {
+            write_domain_name_address(dnaddr, *port, buf)
+        }
     }
 }
 
@@ -101,69 +103,111 @@ impl Socks5Handler {
 
     pub async fn socks5_greet(self: &mut Self) -> Result<(), std::io::Error> {
         // Read the SOCKS5 greeting
-        self.stream.read_buf(&mut self.buffer).await.expect("Failed to read from stream");
-    
-        info!("SOCKS5 greeting: Received {} bytes: {:?}", self.buffer.len(), self.buffer.to_vec());
-    
+        self.stream
+            .read_buf(&mut self.buffer)
+            .await
+            .expect("Failed to read from stream");
+
+        info!(
+            "SOCKS5 greeting: Received {} bytes: {:?}",
+            self.buffer.len(),
+            self.buffer.to_vec()
+        );
+
         if self.buffer.len() < 2 || self.buffer[0] != 0x05 {
             eprintln!("Not a SOCKS5 request");
-            return Err(io::Error::new(io::ErrorKind::InvalidInput, "Not a SOCKS5 request"));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Not a SOCKS5 request",
+            ));
         }
-    
+
         let nmethods = self.buffer[1] as usize;
         if self.buffer.len() < 2 + nmethods {
             eprintln!("Incomplete SOCKS5 greeting");
-            return Err(io::Error::new(io::ErrorKind::InvalidInput, "Incomplete SOCKS5 greeting"));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Incomplete SOCKS5 greeting",
+            ));
         }
-    
+
         // For simplicity, always use "NO AUTHENTICATION REQUIRED"
-        self.stream.write_all(&[0x05, 0x00]).await.expect("Failed to write to stream");
-    
+        self.stream
+            .write_all(&[0x05, 0x00])
+            .await
+            .expect("Failed to write to stream");
+
         self.buffer.clear();
 
         Ok(())
     }
-    
+
     pub async fn socks5_get_target(self: &mut Self) -> Result<Address, std::io::Error> {
         // Read the actual request
-        self.stream.read_buf(&mut self.buffer).await.expect("Failed to read from stream");
-    
-        info!("Actual SOCKS5 request: Received {} bytes: {:?}", self.buffer.len(), self.buffer.to_vec());
-    
+        self.stream
+            .read_buf(&mut self.buffer)
+            .await
+            .expect("Failed to read from stream");
+
+        info!(
+            "Actual SOCKS5 request: Received {} bytes: {:?}",
+            self.buffer.len(),
+            self.buffer.to_vec()
+        );
+
         if self.buffer.len() < 7 || self.buffer[0] != 0x05 || self.buffer[1] != 0x01 {
             println!("Invalid SOCKS5 request");
-            return Err(io::Error::new(io::ErrorKind::InvalidInput, "Invalid SOCKS5 request"));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Invalid SOCKS5 request",
+            ));
         }
-    
+
         // Extract address and port
         let target_addr: Address = match self.buffer[3] {
-            0x01 => { // IPv4
+            0x01 => {
+                // IPv4
                 if self.buffer.len() < 10 {
                     eprintln!("Incomplete request for IPv4 address");
-                    return Err(io::Error::new(io::ErrorKind::InvalidInput, "Incomplete request for IPv4 address"));
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        "Incomplete request for IPv4 address",
+                    ));
                 }
-                let addr = std::net::Ipv4Addr::new(self.buffer[4], self.buffer[5], self.buffer[6], self.buffer[7]);
+                let addr = std::net::Ipv4Addr::new(
+                    self.buffer[4],
+                    self.buffer[5],
+                    self.buffer[6],
+                    self.buffer[7],
+                );
                 let port = (&self.buffer[8..10]).get_u16();
                 Address::SocketAddress(SocketAddr::from((addr, port)))
-            },
-            0x03 => { // Domain name
+            }
+            0x03 => {
+                // Domain name
                 let domain_length = self.buffer[4] as usize;
                 if self.buffer.len() < domain_length + 5 {
                     eprintln!("Incomplete request for domain name");
-                    return Err(io::Error::new(io::ErrorKind::InvalidInput, "Incomplete request for domain name"));
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        "Incomplete request for domain name",
+                    ));
                 }
-                let domain = std::str::from_utf8(&self.buffer[5..5+domain_length]).expect("Invalid domain string");
-    
-                
-                let port = (&self.buffer[5+domain_length..5+domain_length+2]).get_u16();
-                
+                let domain = std::str::from_utf8(&self.buffer[5..5 + domain_length])
+                    .expect("Invalid domain string");
+
+                let port = (&self.buffer[5 + domain_length..5 + domain_length + 2]).get_u16();
+
                 info!("Requested Domain:port: {}:{}", domain, port);
-    
+
                 Address::DomainNameAddress(domain.to_string(), port)
-            },
+            }
             _ => {
                 eprintln!("Address type not supported");
-                return Err(io::Error::new(io::ErrorKind::InvalidInput, "Address type not supported"));
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Address type not supported",
+                ));
             }
         };
 
@@ -172,7 +216,10 @@ impl Socks5Handler {
 
     pub async fn socks5_response(self: &mut Self, buf: &mut BytesMut) {
         // Send the response header
-        self.stream.write_all(&buf).await.expect("Failed to write back to client's stream");
+        self.stream
+            .write_all(&buf)
+            .await
+            .expect("Failed to write back to client's stream");
         info!("Responsed header to SOCKS5 client: {:?}", buf.to_vec());
     }
 }
