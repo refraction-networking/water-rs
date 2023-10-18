@@ -1,12 +1,12 @@
 [package]
-name = "water-wasm-crate"
+name = "water-wasm"
 version = "0.1.0"
-authors = ["ecec <helloentroppy@gmail.com>"]
-description = "A WASM template crate that can be integrated with W.A.T.E.R. library"
-edition = "2021"
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
 
 [lib]
-name = "water_wasm_crate"
+name = "water_wasm"
 path = "src/lib.rs"
 crate-type = ["cdylib", "lib"]
 

@@ -45,7 +45,7 @@ use socks5::*;
 use utils::*;
 use crypto_io::*;
 use client::*;
-use water_wasm_crate::*;
+use water_wasm::*;
 use aead::{DecryptedReader, EncryptedWriter};
 
 // =================== SHADOWSOCKS_CRYPTO ===================

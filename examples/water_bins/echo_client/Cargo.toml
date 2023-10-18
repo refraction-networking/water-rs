@@ -1,7 +1,9 @@
 [package]
 name = "echo-client"
 version = "0.1.0"
-edition = "2021"
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
 publish = false
 
 [lib]
@@ -26,4 +28,4 @@ url = { version = "2.2.2", features = ["serde"] }
 libc = "0.2.147"
 
 # water wasm lib import
-water-wasm-crate = { path = "../../../crates/water_wasm_pt/", version = "0.1.0" }
+water-wasm = { path = "../../../crates/water_wasm/", version = "0.1.0" }

@@ -3,7 +3,7 @@ name = "water"
 version = "0.1.0"
 authors.workspace = true
 description.workspace = true
-editio.workspace = true
+edition.workspace = true
 
 [lib]
 # crate-type = ["cdylib"]

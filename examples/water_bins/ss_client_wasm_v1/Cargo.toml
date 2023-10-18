@@ -1,10 +1,10 @@
 [package]
 name = "ss-client-wasm"
 version = "0.5.2"
-authors = ["ecec <helloentroppy@gmail.com>"]
-edition = "2021"
-rust-version = "1.61"
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+publish = false
 
 [lib]
 name = "ss_client_wasm"
@@ -38,4 +38,4 @@ futures = "0.3.28"
 pin-project = "1.1.2"
 
 # water wasm lib import
-water-wasm-crate = { path = "../../../crates/water_wasm_pt/", version = "0.1.0" }
+water-wasm = { path = "../../../crates/water_wasm/", version = "0.1.0" }

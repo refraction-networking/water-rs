@@ -1,8 +1,10 @@
 [package]
 name="cli"
-edition="2021"
 version = "0.1.0"
-
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+publish = false
 
 [dependencies]
 # rand = "0.8"

@@ -2,7 +2,6 @@
 use std::{
     io::{self, Read, Write},
     os::fd::IntoRawFd,
-    // os::wasi::prelude::FromRawFd,
     os::fd::FromRawFd,
     sync::Mutex,
     vec,
@@ -28,7 +27,7 @@ use serde::{Serialize, Deserialize, de::DeserializeOwned};
 use tokio_util::codec::{AnyDelimiterCodec, Framed, FramedParts};
 use std::time::Duration;
 
-use water_wasm_crate::*;
+use water_wasm::*;
 
 pub mod async_socks5_listener;
 use async_socks5_listener::*;
