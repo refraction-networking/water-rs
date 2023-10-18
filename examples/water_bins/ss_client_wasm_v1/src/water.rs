@@ -2,7 +2,17 @@ use super::*;
 
 use bytes::{BufMut, BytesMut};
 
+#[cfg(target_family = "wasm")]
 #[export_name = "_init"]
+pub fn _init(debug: bool) {
+    if debug {
+        tracing_subscriber::fmt().with_max_level(Level::INFO).init();
+    }
+
+    info!("[WASM] running in _init");
+}
+
+#[cfg(not(target_family = "wasm"))]
 pub fn _init(debug: bool) {
     if debug {
         tracing_subscriber::fmt().with_max_level(Level::INFO).init();
