@@ -1,6 +1,6 @@
 
 [workspace]
-members = ["crates/*", "examples/water_bins/*", "examples/clients/*"]
+members = ["crates/*", "examples/water_bins/*", "examples/clients/*", "tests"]
 # exclude = ["crates/foo", "path/to/other"]
 default-members = ["crates/*"]
 resolver="2"

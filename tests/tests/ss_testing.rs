@@ -1,33 +1,33 @@
 // use cap_std::net::TcpStream;
 use water::*;
-use rand;
+// use rand;
 
-use pprof::protos::Message;
-use std::net::{TcpListener, TcpStream};
-use std::thread;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+// use pprof::protos::Message;
+// use std::net::{TcpListener, TcpStream};
+// use std::thread;
+// use std::sync::atomic::{AtomicBool, Ordering};
+// use std::sync::Arc;
 
-use tracing_subscriber;
 use tracing::Level;
 
-use std::time::Instant;
-use tracing::info;
+// use std::time::Instant;
+// use tracing::info;
 
-use std::io::{Read, Write, ErrorKind};
-use std::thread::sleep;
-use std::time::Duration;
+// use std::io::{Read, Write, ErrorKind};
+// use std::thread::sleep;
+// use std::time::Duration;
 
 #[test]
 fn wasm_managed_shadowsocks_async() {
-    tracing_subscriber::fmt()
-        .with_max_level(Level::INFO)
-        .init();
-    let conf = config::WATERConfig::init(String::from("./tests/test_wasm/ss_client_wasm.wasm"), 
-                                            String::from("ss_client_execute"), 
-                                         String::from("./tests/test_data/config.json"), 
-                                         2, 
-                                               true).unwrap();
+    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
+    let conf = config::WATERConfig::init(
+        String::from("./test_wasm/ss_client_wasm.wasm"),
+        String::from("ss_client_execute"),
+        String::from("./test_data/config.json"),
+        2,
+        true,
+    )
+    .unwrap();
 
     let mut water_client = runtime::WATERClient::new(conf).unwrap();
     water_client.execute().unwrap();
@@ -69,15 +69,15 @@ fn wasm_managed_shadowsocks_async() {
 //         water_client.connect("", 0)?;
 
 //         // let mut water_client = TcpStream::connect(("127.0.0.1", 8088))?;
-        
+
 //         // Not measuring the profiler guard initialization since it's unrelated to the read/write ops
 //         let guard = pprof::ProfilerGuard::new(100).unwrap();
 
 //         let single_data_size = 1024; // Bytes per iteration
 //         let total_iterations = 1;
-        
+
 //         let random_data: Vec<u8> = (0..single_data_size).map(|_| rand::random::<u8>()).collect();
-        
+
 //         let start = Instant::now();
 //         for _ in 0..total_iterations {
 //             water_client.write(&random_data)?;
@@ -91,13 +91,12 @@ fn wasm_managed_shadowsocks_async() {
 //         let avg_bandwidth = total_data_size_mb / elapsed_time / 1024.0 / 1024.0;
 
 //         info!("avg bandwidth: {:.2} MB/s (N={})", avg_bandwidth, total_iterations);
-        
-        
+
 //         let single_data_size = 1024; // Bytes per iteration
 //         let total_iterations = 100;
-        
+
 //         let random_data: Vec<u8> = (0..single_data_size).map(|_| rand::random::<u8>()).collect();
-        
+
 //         let start = Instant::now();
 //         for _ in 0..total_iterations {
 //             water_client.write(&random_data)?;
@@ -111,19 +110,19 @@ fn wasm_managed_shadowsocks_async() {
 //         let avg_bandwidth = total_data_size_mb / elapsed_time / 1024.0 / 1024.0;
 
 //         info!("avg bandwidth: {:.2} MB/s (N={})", avg_bandwidth, total_iterations);
-    
+
 //         // Stop and report profiler data
 //         if let Ok(report) = guard.report().build() {
 //             // println!("{:?}", report);
 //             // report.flamegraph(std::io::stdout())?;
 //             let mut file = std::fs::File::create("flamegraph.svg")?;
 //             report.flamegraph(file)?;
-    
+
 //             // let mut file = std::fs::File::create("profile.pb")?;
 //             // report.pprof(file)?;
 //             let mut file = std::fs::File::create("profile.pb").unwrap();
 //             let profile = report.pprof().unwrap();
-    
+
 //             let mut content = Vec::new();
 //             // profile.encode(&mut content).unwrap();
 //             profile.write_to_vec(&mut content).unwrap();
