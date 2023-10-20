@@ -48,4 +48,4 @@ jobs:
     - name: Test
       run: cargo test --verbose --workspace --all-features
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --verbose --workspace
