@@ -26,7 +26,7 @@ struct Args {
     #[arg(short, long, default_value_t = 2)]
     type_client: u32,
 
-    /// Optional argument specifying the client_type, default to be Runner
+    /// Optional argument enabling debug logging
     #[arg(short, long, default_value_t = false)]
     debug: bool,
 }
@@ -37,7 +37,7 @@ impl From<Args> for WATERConfig {
             filepath: args.wasm_path,
             entry_fn: args.entry_fn,
             config_wasm: args.config_wasm,
-            client_type: args.type_client,
+            client_type: args.type_client.into(),
             debug: args.debug,
         }
     }

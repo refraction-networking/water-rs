@@ -205,7 +205,7 @@ async fn wasm_managed_shadowsocks_async() {
         String::from("./test_wasm/ss_client_wasm.wasm"),
         String::from("v1_listen"),
         String::from("./test_data/config.json"),
-        2,
+        config::WaterBinType::Runner,
         true,
     )
     .unwrap();
