@@ -168,7 +168,7 @@ impl WATERStream<Host> {
 
         std::mem::forget(water_io); // forget the water_io, so that it won't be closed
 
-        let ctx = core.store.data_mut().preview1_ctx.as_mut().unwrap();
+        let ctx = core.store.data_mut().preview1_ctx.as_mut().context("Failed to retrieve preview1_ctx from Host")?;
         let water_io_fd = ctx.push_file(Box::new(water_io_file), FileAccessMode::all())?;
 
         let water_bridging = match core.instance.get_func(&mut core.store, WATER_BRIDGING_FN) {

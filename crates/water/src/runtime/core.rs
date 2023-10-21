@@ -54,7 +54,7 @@ impl H2O<Host> {
         // store.data_mut().preview1_ctx = Some(WasiCtxBuilder::new().inherit_stdio().preopened_dir(path, ".")?.build());
         store.data_mut().preview1_ctx = Some(WasiCtxBuilder::new().inherit_stdio().build());
 
-        wasmtime_wasi::add_to_linker(&mut linker, |h: &mut Host| h.preview1_ctx.as_mut().unwrap())?;
+        wasmtime_wasi::add_to_linker(&mut linker, |h: &mut Host| h.preview1_ctx.as_mut().context("Failed to retrieve preview1_ctx from Host")?)?;
 
         // initializing stuff for multithreading
         #[cfg(feature = "multithread")]
@@ -65,7 +65,7 @@ impl H2O<Host> {
             )?));
 
             wasmtime_wasi_threads::add_to_linker(&mut linker, &store, &module, |h: &mut Host| {
-                h.wasi_threads.as_ref().unwrap()
+                h.wasi_threads.as_ref().context("Failed to get ref of wasi_threads from Host")?
             })?;
         }
 
