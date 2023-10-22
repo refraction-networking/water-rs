@@ -45,6 +45,23 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Install latest Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+
+    # Build for default target
+    - name: Build Default Target
+      run: cargo build --verbose --workspace --exclude examples/water_bins/*
+
+    # Build for wasm32-wasi target
+    - name: Build wasm32-wasi Target
+      run: cargo build --verbose --target wasm32-wasi
+      env:
+        RUSTFLAGS: --cfg tokio_unstable
+
     - name: Test
       run: cargo test --verbose --workspace --all-features
     - name: Build

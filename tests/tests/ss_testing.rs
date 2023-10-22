@@ -3,11 +3,9 @@ use water::*;
 // use rand;
 // use pprof::protos::Message;
 // use tracing::info;
-use futures::future::{self, Either};
-use shadowsocks_rust::{EXIT_CODE_SERVER_ABORTED, EXIT_CODE_SERVER_EXIT_UNEXPECTEDLY};
-use tracing::{info, Level};
 
-use std::process::ExitCode;
+use tracing::Level;
+
 use std::thread;
 use std::{
     net::{SocketAddr, ToSocketAddrs},
@@ -15,8 +13,6 @@ use std::{
 };
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
-    runtime::Builder,
-    sync::oneshot,
     time::{self, Duration},
 };
 

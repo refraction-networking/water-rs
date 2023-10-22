@@ -70,7 +70,7 @@ fn benchmarking_v0_echo() -> Result<(), anyhow::Error> {
             String::from("./tests/test_wasm/proxy.wasm"),
             String::from("_dial"),
             String::from("./tests/test_data/config.json"),
-            0,
+            config::WaterBinType::Dial,
             true,
         )?;
         let mut water_client = runtime::WATERClient::new(conf)?;
