@@ -33,7 +33,7 @@ jobs:
       run: cargo clippy --workspace --all-targets --verbose --all-features
 
   build:
-    name: Test and Build
+    name: Test and Build WASM
     needs: format
     # needs: [format, lint]
     strategy:
@@ -45,16 +45,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Install latest Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        override: true
 
-    # Build for default target
-    - name: Build Default Target
-      run: cargo build --verbose --workspace --exclude crates/wasm/,examples/water_bins/ss_client_wasm_v1/,examples/water_bins/echo_client/
+    # Build for WATER host
+    - name: Build WATER Host crate
+      run: cargo build
+      working-directory: crates/water
 
     # Build for wasm32-wasi target
     - name: Build wasm32-wasi Target
@@ -67,5 +62,3 @@ jobs:
 
     - name: Test
       run: cargo test --verbose --workspace --all-features
-    - name: Build
-      run: cargo build --verbose --workspace
