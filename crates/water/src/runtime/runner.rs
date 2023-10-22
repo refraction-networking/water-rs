@@ -13,7 +13,10 @@ impl WATERRunner<Host> {
             .core
             .instance
             .get_func(&mut self.core.store, &conf.entry_fn)
-            .unwrap();
+            .context(format!(
+                "failed to find declared entry function: {}",
+                &conf.entry_fn
+            ))?;
         match fnc.call(&mut self.core.store, &[], &mut []) {
             Ok(_) => {}
             Err(e) => return Err(anyhow::Error::msg(format!("run function failed: {}", e))),

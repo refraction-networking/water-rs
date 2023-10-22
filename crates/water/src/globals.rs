@@ -16,6 +16,7 @@ pub const WRITE_DONE_FN: &str = "_user_write_done";
 pub const WATER_BRIDGING_FN: &str = "_set_inbound";
 pub const READER_FN: &str = "_read";
 pub const WRITER_FN: &str = "_write";
+pub const DIAL_FN: &str = "_dial";
 
 pub const RUNTIME_VERSION_MAJOR: i32 = 0x001aaaaa;
 pub const RUNTIME_VERSION: &str = "v0.1-alpha";

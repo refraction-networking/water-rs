@@ -136,12 +136,16 @@ impl H2O<Host> {
             }
         };
 
-        // open the config file and insert to WASM
-        let dir = Dir::open_ambient_dir(".", ambient_authority())?; // Open the root directory
-        let wasi_file = dir.open_with(
-            &config.config_wasm,
-            OpenOptions::new().read(true).write(true),
-        )?;
+        // Obtain the directory path and file name from config_wasm
+        let full_path = Path::new(&config.config_wasm);
+        let parent_dir = full_path.parent().unwrap(); // Assumes config_wasm has a parent directory
+        let file_name = full_path.file_name().unwrap().to_str().unwrap(); // Assumes file_name is valid UTF-8
+
+        // Open the parent directory
+        let dir = Dir::open_ambient_dir(parent_dir, ambient_authority())?;
+
+        let wasi_file = dir.open_with(file_name, OpenOptions::new().read(true).write(true))?;
+
         let wasi_file = wasmtime_wasi::sync::file::File::from_cap_std(wasi_file);
 
         let ctx = self.store.data_mut().preview1_ctx.as_mut().unwrap();

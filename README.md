@@ -49,6 +49,9 @@ cargo test --workspace --verbose
 
 # run tests for a single crate
 cargo test -p <crate_name> --verbose
+
+# run a single test (or test matching name prefix) in a single crate
+cargo test -p <crate_name> --verbose -- <test_name>
 ```
 
 ## TODOs
