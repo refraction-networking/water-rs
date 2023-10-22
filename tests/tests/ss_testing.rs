@@ -127,7 +127,7 @@ async fn wasm_managed_shadowsocks_async() {
     // ==== setup WASM Shadowsocks client ====
     let conf = config::WATERConfig::init(
         String::from("./test_wasm/ss_client_wasm.wasm"),
-        String::from("ss_client_execute"),
+        String::from("v1_listen"),
         String::from("./test_data/config.json"),
         config::WaterBinType::Runner,
         true,

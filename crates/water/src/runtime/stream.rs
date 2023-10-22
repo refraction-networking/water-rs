@@ -169,7 +169,7 @@ impl WATERStream<Host> {
             .data_mut()
             .preview1_ctx
             .as_mut()
-            .context("Failed to retrieve preview1_ctx from it")?;
+            .context("Failed to retrieve preview1_ctx from Host")?;
         let water_io_fd = ctx.push_file(Box::new(water_io_file), FileAccessMode::all())?;
 
         let water_bridging = match core.instance.get_func(&mut core.store, WATER_BRIDGING_FN) {
