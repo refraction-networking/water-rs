@@ -13,6 +13,7 @@ pub mod version_common;
 use std::{
     io::{Read, Write},
     os::unix::io::{AsRawFd, FromRawFd},
+    path::Path,
     sync::Arc,
 };
 
@@ -33,7 +34,7 @@ use wasmtime_wasi_threads::WasiThreadsCtx;
 // =================== CURRENT CRATE IMPORTS ===================
 use crate::{
     config::{WATERConfig, WaterBinType},
-    globals::{CONFIG_FN, INIT_FN, READER_FN, WATER_BRIDGING_FN, WRITER_FN},
+    globals::{CONFIG_FN, DIAL_FN, INIT_FN, READER_FN, WATER_BRIDGING_FN, WRITER_FN},
 };
 
 // =================== MODULES' DEPENDENCIES ===================

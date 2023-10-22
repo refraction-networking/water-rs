@@ -1,6 +1,5 @@
 pub mod wasm_shared_config;
 
-
 pub struct WATERConfig {
     pub filepath: String,
     pub entry_fn: String,
