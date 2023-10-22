@@ -54,7 +54,7 @@ jobs:
 
     # Build for default target
     - name: Build Default Target
-      run: cargo build --verbose --workspace --exclude examples/water_bins/*
+      run: cargo build --verbose --workspace --exclude examples/water_bins/ss_client_wasm_v1/,examples/water_bins/echo_client/
 
     # Build for wasm32-wasi target
     - name: Build wasm32-wasi Target
