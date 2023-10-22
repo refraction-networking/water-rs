@@ -62,24 +62,23 @@ pub struct WATERClient {
 impl WATERClient {
     pub fn new(conf: WATERConfig) -> Result<Self, anyhow::Error> {
         // client_type: 0 -> Dialer, 1 -> Listener, 2 -> Runner
-        let water: WATERClientType;
-        match conf.client_type {
+        let water = match conf.client_type {
             WaterBinType::Dial => {
                 let stream = WATERStream::init(&conf)?;
-                water = WATERClientType::Dialer(stream);
+                WATERClientType::Dialer(stream)
             }
             WaterBinType::Listen => {
                 let stream = WATERListener::init(&conf)?;
-                water = WATERClientType::Listener(stream);
+                WATERClientType::Listener(stream)
             }
             WaterBinType::Runner => {
                 let runner = WATERRunner::init(&conf)?;
-                water = WATERClientType::Runner(runner);
+                WATERClientType::Runner(runner)
             }
             _ => {
                 return Err(anyhow::anyhow!("Invalid client type"));
             }
-        }
+        };
 
         Ok(WATERClient {
             config: conf,
