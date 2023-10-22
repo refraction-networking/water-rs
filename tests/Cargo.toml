@@ -18,6 +18,6 @@ pprof = { version = "0.11.1", features = ["flamegraph", "protobuf-codec", "prost
 anyhow = "1.0.7"
 shadowsocks-service = {version = "1.17.0", features = ["server"]}
 shadowsocks-rust = "1.17.0"
-tokio = { version = "1.24.2", default-features = false, features = ["net", "rt", "macros", "io-util", "io-std", "time", "sync"] }
+tokio = { version = "1.24.2", features = ["full", "macros"] }
 futures = "0.3.28"
 tempfile = "3.8.0"

@@ -58,7 +58,7 @@ pub fn _process_config(fd: i32) {
 }
 
 /// WASM Entry point here
-#[export_name = "v1_listen"]
+#[export_name = "ss_client_execute"]
 fn client_start() {
     _start_listen().unwrap();
 }

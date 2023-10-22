@@ -31,9 +31,12 @@ fn test_echo() -> Result<(), Box<dyn std::error::Error>> {
         let (mut socket, _) = listener.accept().unwrap();
         let mut buf = [0; 1024];
         let res = socket.read(&mut buf);
+
         assert!(res.is_ok());
-        assert_eq!(res.unwrap(), test_message.len());
-        let res = socket.write(&buf);
+        let read_bytes = res.unwrap();
+
+        assert_eq!(read_bytes, test_message.len());
+        let res = socket.write(&buf[..read_bytes]);
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), test_message.len());
     });
