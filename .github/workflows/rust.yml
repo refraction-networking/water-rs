@@ -54,12 +54,12 @@ jobs:
 
     # Build for default target
     - name: Build Default Target
-      run: cargo build --verbose --workspace --exclude examples/water_bins/ss_client_wasm_v1/,examples/water_bins/echo_client/
+      run: cargo build --verbose --workspace --exclude crates/wasm/,examples/water_bins/ss_client_wasm_v1/,examples/water_bins/echo_client/
 
     # Build for wasm32-wasi target
     - name: Build wasm32-wasi Target
       run: |
-        for member in examples/water_bins/ss_client_wasm_v1/ examples/water_bins/echo_client/; do
+        for member in crates/wasm/ examples/water_bins/ss_client_wasm_v1/ examples/water_bins/echo_client/; do
           cargo build --verbose --manifest-path $member/Cargo.toml --target wasm32-wasi
         done
       env:
