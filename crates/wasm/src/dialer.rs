@@ -58,7 +58,7 @@ impl Dialer {
         };
 
         if fd < 0 {
-            return Err(anyhow!("failed to create listener"));
+            return Err(anyhow!("failed to connect to remote"));
         }
 
         Ok(fd)

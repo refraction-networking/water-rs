@@ -40,6 +40,20 @@ nc 127.0.0.1 9005
 ```
 you should see `> CONNECTED` in the terminal of running WASM, then you can connect a bunch like this and input anything to see how it echos.
 
+
+## Running tests
+
+```sh
+# runs ALL tests
+cargo test --workspace --verbose
+
+# run tests for a single crate
+cargo test -p <crate_name> --verbose
+
+# run a single test (or test matching name prefix) in a single crate
+cargo test -p <crate_name> --verbose -- <test_name>
+```
+
 ## TODOs
 - [ ] wasm_config sharing implementation 
 - [ ] Generalize Host export TCP listener helper function

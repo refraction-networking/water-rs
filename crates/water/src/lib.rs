@@ -12,3 +12,11 @@ pub mod errors;
 pub mod globals;
 pub mod runtime;
 pub mod utils;
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn water_runtime_test() {
+        assert_eq!(1, 1);
+    }
+}

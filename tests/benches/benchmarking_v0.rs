@@ -1,28 +1,26 @@
 // use cap_std::net::TcpStream;
 use water::*;
-use rand;
 
 use pprof::protos::Message;
-use std::net::{TcpListener, TcpStream};
+// use std::net::{TcpListener, TcpStream};
+use std::net::TcpListener;
 use std::thread;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+// use std::sync::atomic::{AtomicBool, Ordering};
+// use std::sync::Arc;
 
-use tracing_subscriber;
 use tracing::Level;
 
 use std::time::Instant;
 use tracing::info;
 
-use std::io::{Read, Write, ErrorKind};
-use std::thread::sleep;
-use std::time::Duration;
+use std::io::{Read, Write};
+// use std::io::{Read, Write, ErrorKind};
+// use std::thread::sleep;
+// use std::time::Duration;
 
 #[test]
 fn benchmarking_v0_echo() -> Result<(), anyhow::Error> {
-    tracing_subscriber::fmt()
-        .with_max_level(Level::INFO)
-        .init();
+    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
 
     thread::spawn(move || {
         let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
@@ -39,7 +37,7 @@ fn benchmarking_v0_echo() -> Result<(), anyhow::Error> {
                                 if n == 0 {
                                     break; // Connection was closed.
                                 }
-                                
+
                                 // Echo data back to client.
                                 if let Err(e) = stream.write_all(&buf[..n]) {
                                     eprintln!("Error writing to client: {:?}", e);
@@ -68,20 +66,28 @@ fn benchmarking_v0_echo() -> Result<(), anyhow::Error> {
     // --------- start to dial the listener ---------
     let dial_handle = std::thread::spawn(|| -> Result<(), anyhow::Error> {
         // Measure initialization time
-        let conf = config::WATERConfig::init(String::from("./tests/test_wasm/proxy.wasm"), String::from("_dial"), String::from("./tests/test_data/config.json"), 0, true)?;
+        let conf = config::WATERConfig::init(
+            String::from("./tests/test_wasm/proxy.wasm"),
+            String::from("_dial"),
+            String::from("./tests/test_data/config.json"),
+            config::WaterBinType::Dial,
+            true,
+        )?;
         let mut water_client = runtime::WATERClient::new(conf)?;
         water_client.connect("", 0)?;
 
         // let mut water_client = TcpStream::connect(("127.0.0.1", 8088))?;
-        
+
         // Not measuring the profiler guard initialization since it's unrelated to the read/write ops
         let guard = pprof::ProfilerGuard::new(100).unwrap();
 
         let single_data_size = 1024; // Bytes per iteration
         let total_iterations = 1;
-        
-        let random_data: Vec<u8> = (0..single_data_size).map(|_| rand::random::<u8>()).collect();
-        
+
+        let random_data: Vec<u8> = (0..single_data_size)
+            .map(|_| rand::random::<u8>())
+            .collect();
+
         let start = Instant::now();
         for _ in 0..total_iterations {
             water_client.write(&random_data)?;
@@ -94,14 +100,18 @@ fn benchmarking_v0_echo() -> Result<(), anyhow::Error> {
         let total_data_size_mb = (total_iterations * single_data_size) as f64;
         let avg_bandwidth = total_data_size_mb / elapsed_time / 1024.0 / 1024.0;
 
-        info!("avg bandwidth: {:.2} MB/s (N={})", avg_bandwidth, total_iterations);
-        
-        
+        info!(
+            "avg bandwidth: {:.2} MB/s (N={})",
+            avg_bandwidth, total_iterations
+        );
+
         let single_data_size = 1024; // Bytes per iteration
         let total_iterations = 100;
-        
-        let random_data: Vec<u8> = (0..single_data_size).map(|_| rand::random::<u8>()).collect();
-        
+
+        let random_data: Vec<u8> = (0..single_data_size)
+            .map(|_| rand::random::<u8>())
+            .collect();
+
         let start = Instant::now();
         for _ in 0..total_iterations {
             water_client.write(&random_data)?;
@@ -114,14 +124,17 @@ fn benchmarking_v0_echo() -> Result<(), anyhow::Error> {
         let total_data_size_mb = (total_iterations * single_data_size) as f64;
         let avg_bandwidth = total_data_size_mb / elapsed_time / 1024.0 / 1024.0;
 
-        info!("avg bandwidth: {:.2} MB/s (N={})", avg_bandwidth, total_iterations);
-        
+        info!(
+            "avg bandwidth: {:.2} MB/s (N={})",
+            avg_bandwidth, total_iterations
+        );
+
         // ================== test more iterations ==================
         // let single_data_size = 1024; // Bytes per iteration
         // let total_iterations = 10000;
-        
+
         // let random_data: Vec<u8> = (0..single_data_size).map(|_| rand::random::<u8>()).collect();
-        
+
         // let start = Instant::now();
         // for _ in 0..total_iterations {
         //     water_client.write(&random_data)?;
@@ -135,13 +148,12 @@ fn benchmarking_v0_echo() -> Result<(), anyhow::Error> {
         // let avg_bandwidth = total_data_size_mb / elapsed_time / 1024.0 / 1024.0;
 
         // info!("avg bandwidth: {:.2} MB/s (N={})", avg_bandwidth, total_iterations);
-        
-        
+
         // let single_data_size = 1024; // Bytes per iteration
         // let total_iterations = 43294;
-        
+
         // let random_data: Vec<u8> = (0..single_data_size).map(|_| rand::random::<u8>()).collect();
-        
+
         // let start = Instant::now();
         // for _ in 0..total_iterations {
         //     water_client.write(&random_data)?;
@@ -155,19 +167,19 @@ fn benchmarking_v0_echo() -> Result<(), anyhow::Error> {
         // let avg_bandwidth = total_data_size_mb / elapsed_time / 1024.0 / 1024.0;
 
         // info!("avg bandwidth: {:.2} MB/s (N={})", avg_bandwidth, total_iterations);
-    
+
         // Stop and report profiler data
         if let Ok(report) = guard.report().build() {
             // println!("{:?}", report);
             // report.flamegraph(std::io::stdout())?;
-            let mut file = std::fs::File::create("flamegraph.svg")?;
+            let file = std::fs::File::create("flamegraph.svg")?;
             report.flamegraph(file)?;
-    
+
             // let mut file = std::fs::File::create("profile.pb")?;
             // report.pprof(file)?;
             let mut file = std::fs::File::create("profile.pb").unwrap();
             let profile = report.pprof().unwrap();
-    
+
             let mut content = Vec::new();
             // profile.encode(&mut content).unwrap();
             profile.write_to_vec(&mut content).unwrap();
@@ -197,7 +209,7 @@ fn benchmarking_v0_echo() -> Result<(), anyhow::Error> {
 //         // water_client.execute();
 
 //         // Ok(())
-        
+
 //         let tcp = std::net::TcpListener::bind(("127.0.0.1", 8088)).unwrap();
 
 //         loop {
@@ -257,9 +269,9 @@ fn benchmarking_v0_echo() -> Result<(), anyhow::Error> {
 //         // keep reading from stdin and call read and write function from water_client.stream
 //         let mut buf = String::new();
 //         std::io::stdin().read_line(&mut buf)?;
-        
+
 //         water_client.write(buf.as_bytes())?;
-        
+
 //         let mut buf = vec![0; 1024];
 //         water_client.read(&mut buf)?;
 

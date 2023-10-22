@@ -13,6 +13,7 @@ pub mod version_common;
 use std::{
     io::{Read, Write},
     os::unix::io::{AsRawFd, FromRawFd},
+    path::Path,
     sync::Arc,
 };
 
@@ -32,8 +33,8 @@ use wasmtime_wasi_threads::WasiThreadsCtx;
 
 // =================== CURRENT CRATE IMPORTS ===================
 use crate::{
-    config::WATERConfig,
-    globals::{CONFIG_FN, INIT_FN, READER_FN, WATER_BRIDGING_FN, WRITER_FN},
+    config::{WATERConfig, WaterBinType},
+    globals::{CONFIG_FN, DIAL_FN, INIT_FN, READER_FN, WATER_BRIDGING_FN, WRITER_FN},
 };
 
 // =================== MODULES' DEPENDENCIES ===================
@@ -61,19 +62,23 @@ pub struct WATERClient {
 impl WATERClient {
     pub fn new(conf: WATERConfig) -> Result<Self, anyhow::Error> {
         // client_type: 0 -> Dialer, 1 -> Listener, 2 -> Runner
-        let water: WATERClientType;
-        if conf.client_type == 0 {
-            let stream = WATERStream::init(&conf)?;
-            water = WATERClientType::Dialer(stream);
-        } else if conf.client_type == 1 {
-            let stream = WATERListener::init(&conf)?;
-            water = WATERClientType::Listener(stream);
-        } else if conf.client_type == 2 {
-            let runner = WATERRunner::init(&conf)?;
-            water = WATERClientType::Runner(runner);
-        } else {
-            return Err(anyhow::anyhow!("Invalid client type"));
-        }
+        let water = match conf.client_type {
+            WaterBinType::Dial => {
+                let stream = WATERStream::init(&conf)?;
+                WATERClientType::Dialer(stream)
+            }
+            WaterBinType::Listen => {
+                let stream = WATERListener::init(&conf)?;
+                WATERClientType::Listener(stream)
+            }
+            WaterBinType::Runner => {
+                let runner = WATERRunner::init(&conf)?;
+                WATERClientType::Runner(runner)
+            }
+            _ => {
+                return Err(anyhow::anyhow!("Invalid client type"));
+            }
+        };
 
         Ok(WATERClient {
             config: conf,
