@@ -1,10 +1,12 @@
+use anyhow::Ok;
+
 use crate::config::wasm_shared_config::StreamConfig;
 use crate::runtime::*;
 use std::convert::TryInto;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
 // TODO: rename this to dial_v1, since it has the ability to let WASM choose ip:port
-pub fn export_tcp_connect(linker: &mut Linker<Host>) {
+pub fn export_tcp_connect(linker: &mut Linker<Host>) -> Result<(), anyhow::Error> {
     linker
         .func_wrap(
             "env",
@@ -48,22 +50,33 @@ pub fn export_tcp_connect(linker: &mut Linker<Host>) {
                     addr => std::net::TcpStream::connect(addr),
                 }
                 .map(TcpStream::from_std)
-                .context("failed to connect to endpoint")
+                .context(format!(
+                    "Failed to connect to {}:{} in Host exported dial",
+                    host, port
+                ))
                 .unwrap();
 
                 // Connecting Tcp
                 let socket_file: Box<dyn WasiFile> = wasmtime_wasi::net::Socket::from(tcp).into();
 
                 // Get the WasiCtx of the caller(WASM), then insert_file into it
-                let ctx: &mut WasiCtx = caller.data_mut().preview1_ctx.as_mut().unwrap();
-                ctx.push_file(socket_file, FileAccessMode::all()).unwrap() as i32
+                let ctx: &mut WasiCtx = caller
+                    .data_mut()
+                    .preview1_ctx
+                    .as_mut()
+                    .context("preview1_ctx in Store is None")
+                    .unwrap();
+                ctx.push_file(socket_file, FileAccessMode::all())
+                    .context("Failed to push file into WASM")
+                    .unwrap() as i32
             },
         )
-        .unwrap();
+        .context("Failed to export Dial function to WASM")?;
+    Ok(())
 }
 
 // TODO: rename this to dial_v1, since it has the ability to let WASM listen on a TcpListener
-pub fn export_tcplistener_create(linker: &mut Linker<Host>) {
+pub fn export_tcplistener_create(linker: &mut Linker<Host>) -> Result<(), anyhow::Error> {
     linker
         .func_wrap(
             "env",
@@ -89,7 +102,7 @@ pub fn export_tcplistener_create(linker: &mut Linker<Host>) {
                     name: config.name.clone().try_into().unwrap(),
                     port: config.port as u16,
                     addr: config.addr.clone(),
-                }); // TODO: add addr here
+                });
 
                 // Get the pair here addr:port
                 let (addr, port) = match listener_file {
@@ -108,11 +121,19 @@ pub fn export_tcplistener_create(linker: &mut Linker<Host>) {
                 let socket_file: Box<dyn WasiFile> = wasmtime_wasi::net::Socket::from(tcp).into();
 
                 // Get the WasiCtx of the caller(WASM), then insert_file into it
-                let ctx: &mut WasiCtx = caller.data_mut().preview1_ctx.as_mut().unwrap();
-                ctx.push_file(socket_file, FileAccessMode::all()).unwrap() as i32
+                let ctx: &mut WasiCtx = caller
+                    .data_mut()
+                    .preview1_ctx
+                    .as_mut()
+                    .context("preview1_ctx in Store is None")
+                    .unwrap();
+                ctx.push_file(socket_file, FileAccessMode::all())
+                    .context("Failed to push file into WASM")
+                    .unwrap() as i32
             },
         )
-        .unwrap();
+        .context("Failed to export TcpListener create function to WASM")?;
+    Ok(())
 }
 
 // Generically link dial functions

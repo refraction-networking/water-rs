@@ -1,7 +1,7 @@
 use crate::runtime::*;
 
 // exportint a function for WASM to get CONFIG file
-pub fn export_config(linker: &mut Linker<Host>, config_file: String) {
+pub fn export_config(linker: &mut Linker<Host>, config_file: String) -> Result<(), anyhow::Error> {
     linker
         .func_wrap(
             "env",
@@ -22,5 +22,6 @@ pub fn export_config(linker: &mut Linker<Host>, config_file: String) {
                     .expect("Error with pushing file") as i32
             },
         )
-        .unwrap();
+        .context("Failed to export config function to WASM")?;
+    Ok(())
 }
