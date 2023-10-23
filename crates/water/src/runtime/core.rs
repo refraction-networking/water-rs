@@ -78,18 +78,18 @@ impl H2O<Host> {
         // export functions -- version dependent -- has to be done before instantiate
         match &version {
             Some(Version::V0) => {
-                v0::funcs::export_tcp_connect(&mut linker);
-                v0::funcs::export_tcplistener_create(&mut linker);
+                v0::funcs::export_tcp_connect(&mut linker)?;
+                v0::funcs::export_tcplistener_create(&mut linker)?;
             }
             Some(Version::V1) => {
-                v1::funcs::export_tcp_connect(&mut linker);
-                v1::funcs::export_tcplistener_create(&mut linker);
+                v1::funcs::export_tcp_connect(&mut linker)?;
+                v1::funcs::export_tcplistener_create(&mut linker)?;
             }
             _ => {} // add export funcs for other versions here
         }
 
         // export functions -- version independent
-        version_common::funcs::export_config(&mut linker, conf.config_wasm.clone());
+        version_common::funcs::export_config(&mut linker, conf.config_wasm.clone())?;
 
         let instance = linker.instantiate(&mut store, &module)?;
 
