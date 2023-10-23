@@ -3,7 +3,7 @@ use super::*;
 use bytes::{BufMut, BytesMut};
 
 #[cfg(target_family = "wasm")]
-#[export_name = "_init"]
+#[export_name = "_water_init"]
 pub fn _init(debug: bool) {
     if debug {
         tracing_subscriber::fmt().with_max_level(Level::INFO).init();
@@ -21,7 +21,7 @@ pub fn _init(debug: bool) {
     info!("[WASM] running in _init");
 }
 
-#[export_name = "_config"]
+#[export_name = "_water_config"]
 pub fn _process_config(fd: i32) {
     info!("[WASM] running in _process_config");
 

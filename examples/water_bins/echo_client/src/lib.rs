@@ -21,7 +21,7 @@ lazy_static! {
 }
 
 #[cfg(target_family = "wasm")]
-#[export_name = "_init"]
+#[export_name = "_water_init"]
 pub fn _init(debug: bool) {
     if debug {
         tracing_subscriber::fmt().with_max_level(Level::INFO).init();
@@ -39,7 +39,7 @@ pub fn _init(debug: bool) {
     info!("[WASM] running in _init");
 }
 
-#[export_name = "_set_inbound"]
+#[export_name = "_water_set_inbound"]
 pub fn _water_bridging(fd: i32) {
     let mut global_dialer = match DIALER.lock() {
         Ok(dialer) => dialer,
@@ -55,7 +55,7 @@ pub fn _water_bridging(fd: i32) {
     );
 }
 
-#[export_name = "_set_outbound"]
+#[export_name = "_water_set_outbound"]
 pub fn _water_bridging_out(fd: i32) {
     let mut global_dialer = match DIALER.lock() {
         Ok(dialer) => dialer,
@@ -71,7 +71,7 @@ pub fn _water_bridging_out(fd: i32) {
     );
 }
 
-#[export_name = "_config"]
+#[export_name = "_water_config"]
 pub fn _process_config(fd: i32) {
     info!("[WASM] running in _process_config");
 
@@ -107,7 +107,7 @@ pub fn _process_config(fd: i32) {
     };
 }
 
-#[export_name = "_write"]
+#[export_name = "_water_write"]
 pub fn _write(bytes_write: i64) -> i64 {
     let mut global_dialer = match DIALER.lock() {
         Ok(dialer) => dialer,
@@ -129,7 +129,7 @@ pub fn _write(bytes_write: i64) -> i64 {
     }
 }
 
-#[export_name = "_read"]
+#[export_name = "_water_read"]
 pub fn _read() -> i64 {
     match DIALER.lock() {
         Ok(mut global_dialer) => {
@@ -151,7 +151,7 @@ pub fn _read() -> i64 {
     }
 }
 
-#[export_name = "_dial"]
+#[export_name = "_water_dial"]
 pub fn _dial() {
     match DIALER.lock() {
         Ok(mut global_dialer) => {
