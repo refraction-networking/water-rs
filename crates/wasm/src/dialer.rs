@@ -23,8 +23,6 @@ impl Dialer {
 
     pub fn dial(&mut self) -> Result<i32, anyhow::Error> {
         info!("[WASM] running in dial func...");
-
-        // FIXME: hardcoded the filename for now, make it a config later
         let fd: i32 = self.tcp_connect()?;
 
         if fd < 0 {
