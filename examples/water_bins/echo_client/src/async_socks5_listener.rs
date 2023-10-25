@@ -1,11 +1,17 @@
-use super::*;
 
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
 };
+use anyhow::Result;
+use bincode::{self};
+use tracing::info;
 
 use std::net::{SocketAddr, ToSocketAddrs};
+use std::{os::fd::FromRawFd, vec};
+
+use crate::DIALER;
+use water_wasm::{ConnStream, Dialer, StreamConfigV1};
 
 // ----------------------- Listener methods -----------------------
 #[export_name = "v1_listen"]

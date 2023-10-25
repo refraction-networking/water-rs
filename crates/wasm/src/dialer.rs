@@ -1,6 +1,9 @@
-use super::*;
+
+use crate::{Connection, Config, ConnStream};
 
 use anyhow::Ok;
+use tracing::info;
+
 use std::os::fd::AsRawFd;
 
 pub struct Dialer {

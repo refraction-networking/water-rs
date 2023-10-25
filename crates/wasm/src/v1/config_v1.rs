@@ -1,4 +1,5 @@
-use super::*;
+
+use serde::{Deserialize, Serialize};
 
 // A Config currently contains the local + remote ip & port
 #[derive(Debug, Deserialize, Clone)]

@@ -1,12 +1,10 @@
 // =================== Imports & Modules =====================
-use std::{io::Read, os::fd::FromRawFd, sync::Mutex, vec};
+use std::{io::Read, os::fd::FromRawFd, sync::Mutex};
 
-use anyhow::Result;
-use bincode::{self};
 use lazy_static::lazy_static;
 use tracing::{info, Level};
 
-use water_wasm::*;
+use water_wasm::{Dialer, ConnStream, DefaultDecoder, DefaultEncoder, Config};
 
 pub mod async_socks5_listener;
 
