@@ -1,9 +1,10 @@
-use std::{default, str::FromStr};
+use std::str::FromStr;
 
 use water_wasm::{Decoder, DefaultDecoder, DefaultEncoder, Encoder};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Failures {
+    #[default]
     Success,
     ConfigError,
     ConfigPanic,
@@ -20,12 +21,6 @@ pub enum Failures {
     WriteHang,
     CloseOnWrite,
     HandshakeError,
-}
-
-impl default::Default for Failures {
-    fn default() -> Self {
-        Failures::Success
-    }
 }
 
 impl FromStr for Failures {
@@ -91,6 +86,12 @@ pub struct IdentityTransport {
     encoder: DefaultEncoder,
     n_encodes: i32,
     n_decodes: i32,
+}
+
+impl Default for IdentityTransport {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl IdentityTransport {
