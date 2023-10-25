@@ -37,7 +37,7 @@ fn _listener_creation() -> Result<i32, std::io::Error> {
     let address = encoded.as_ptr() as u32;
     let size = encoded.len() as u32;
 
-    let fd = unsafe { create_listen(address, size) };
+    let fd = unsafe { water_wasm::net::c::create_listen(address, size) };
 
     if fd < 0 {
         return Err(std::io::Error::new(
@@ -210,9 +210,9 @@ async fn handle_incoming(mut stream: TcpStream) -> std::io::Result<()> {
     // Connect to target address
     let mut tcp_dialer = Dialer::new();
     tcp_dialer.config.remote_address = addr.ip().to_string();
-    tcp_dialer.config.remote_port = addr.port() as u32;
+    tcp_dialer.config.remote_port = addr.port();
 
-    let _tcp_fd = tcp_dialer.dial().expect("Failed to dial");
+    tcp_dialer.dial().expect("Failed to dial");
 
     let target_stream = match tcp_dialer.file_conn.outbound_conn.file.unwrap() {
         ConnStream::TcpStream(s) => s,

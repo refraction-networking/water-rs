@@ -5,8 +5,8 @@ pub mod connections;
 pub mod decoder;
 pub mod dialer;
 pub mod encoder;
+pub mod net;
 pub mod version;
-// pub mod net;
 // pub mod listener_in_wasm;
 
 pub use config::*;
@@ -24,20 +24,10 @@ pub use encoder::*;
 // =================== Imports & Modules =====================
 use std::{
     io::{Read, Write},
-    os::fd::FromRawFd,
     vec,
 };
 
-use bincode::{self};
 use tracing::{debug, info};
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-
-// TODO: move these to speicific implementations, shouldn't be in the crate lib
-// =================== WASM Imports =====================
-extern "C" {
-    // #[link_name = "create-listen"]
-    pub fn create_listen(ptr: u32, size: u32) -> i32;
-    pub fn connect_tcp(ptr: u32, size: u32) -> i32;
-}
