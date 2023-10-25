@@ -1,16 +1,15 @@
-
+use anyhow::Result;
+use bincode::{self};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
 };
-use anyhow::Result;
-use bincode::{self};
 use tracing::info;
 
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::{os::fd::FromRawFd, vec};
 
-use crate::{DIALER, StreamConfigV1};
+use crate::{StreamConfigV1, DIALER};
 use water_wasm::{ConnStream, Dialer};
 
 // ----------------------- Listener methods -----------------------

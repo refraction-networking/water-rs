@@ -119,29 +119,29 @@ fn build_config(
                     name
                 );
                 // let msg = match name.as_str() {
-                    // // [Disabled] Options that are present in tokio, but not in water. Left as example.
-                    //
-                    // "threaded_scheduler" | "multi_thread" => {
-                    //     format!(
-                    //         "Set the runtime flavor with #[{}(flavor = \"multi_thread\")].",
-                    //         macro_name
-                    //     )
-                    // }
-                    // "basic_scheduler" | "current_thread" | "single_threaded" => {
-                    //     format!(
-                    //         "Set the runtime flavor with #[{}(flavor = \"current_thread\")].",
-                    //         macro_name
-                    //     )
-                    // }
-                    // "flavor" | "worker_threads" | "start_paused" => {
-                    //     format!("The `{}` attribute requires an argument.", name)
-                    // }
-                    // name => {
-                    //     format!(
-                    //         "Unknown attribute {} is specified; expected one of: `crate`",
-                    //         name
-                    //     )
-                    // }
+                // // [Disabled] Options that are present in tokio, but not in water. Left as example.
+                //
+                // "threaded_scheduler" | "multi_thread" => {
+                //     format!(
+                //         "Set the runtime flavor with #[{}(flavor = \"multi_thread\")].",
+                //         macro_name
+                //     )
+                // }
+                // "basic_scheduler" | "current_thread" | "single_threaded" => {
+                //     format!(
+                //         "Set the runtime flavor with #[{}(flavor = \"current_thread\")].",
+                //         macro_name
+                //     )
+                // }
+                // "flavor" | "worker_threads" | "start_paused" => {
+                //     format!("The `{}` attribute requires an argument.", name)
+                // }
+                // name => {
+                //     format!(
+                //         "Unknown attribute {} is specified; expected one of: `crate`",
+                //         name
+                //     )
+                // }
                 // };
                 return Err(syn::Error::new_spanned(path, msg));
             }
