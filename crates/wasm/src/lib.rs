@@ -6,7 +6,8 @@ pub mod decoder;
 pub mod dialer;
 pub mod encoder;
 pub mod net;
-pub mod version;
+mod tunnel;
+mod version;
 // pub mod listener_in_wasm;
 
 pub use config::*;
@@ -14,6 +15,7 @@ pub use connections::*;
 pub use decoder::*;
 pub use dialer::*;
 pub use encoder::*;
+pub use tunnel::*;
 // pub use net::*;
 // pub use listener_in_wasm::*;
 

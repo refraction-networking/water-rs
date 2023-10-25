@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
-use serde::{Deserialize, Serialize};
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 
 // A Config currently contains the local + remote ip & port
 #[derive(Debug, Deserialize, Clone)]
