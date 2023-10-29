@@ -64,7 +64,7 @@ jobs:
 
     # Build for wasm32-wasi target
     - name: Build wasm32-wasi Target
-      run: sh ./scripts/build_wasm_targets.sh
+      run: bash ./scripts/build_wasm_targets.sh
       env:
         RUSTFLAGS: --cfg tokio_unstable
 
