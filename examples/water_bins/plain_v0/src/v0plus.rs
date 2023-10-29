@@ -159,7 +159,7 @@ impl Relay {
         }
 
         // return remote_conn_fd
-        Ok(error::Error::NoError.i32())
+        Ok(error::Error::None.i32())
     }
 
     // // borrow self.source_conn

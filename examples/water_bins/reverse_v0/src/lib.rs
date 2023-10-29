@@ -35,7 +35,7 @@ pub static VERSION: i32 = v0plus::VERSION;
 pub fn _init() -> i32 {
     // do all the initializing work here AND pull config from host
     sleep(Duration::from_millis(10)); // sleep for 10ms
-    return error::Error::NoError.i32();
+    error::Error::None.i32()
 }
 
 // V0 API
@@ -61,7 +61,7 @@ pub fn _dial(caller_conn_fd: i32) -> i32 {
         }
         Err(e) => {
             println!("Dialer: dial failed: {}", e);
-            error::Error::GeneralError.i32()
+            error::Error::Unknown.i32()
         }
     }
 }
@@ -87,7 +87,7 @@ pub fn _accept(caller_conn_fd: i32) -> i32 {
         }
         Err(e) => {
             println!("Listener: listen failed: {}", e);
-            error::Error::GeneralError.i32()
+            error::Error::Unknown.i32()
         }
     }
 }
@@ -110,11 +110,11 @@ pub fn _associate() -> i32 {
     match relay.associate() {
         Ok(_) => {
             println!("Relay: associate succeeded");
-            error::Error::NoError.i32()
+            error::Error::None.i32()
         }
         Err(e) => {
             println!("Relay: associate failed: {}", e);
-            error::Error::GeneralError.i32()
+            error::Error::Unknown.i32()
         }
     }
 }
@@ -135,11 +135,11 @@ pub fn _cancel_with(fd: i32) -> i32 {
     match cancel.wrap(fd) {
         Ok(_) => {
             println!("_cancel_with: cancel set to {}", fd);
-            error::Error::NoError.i32()
+            error::Error::None.i32()
         }
         Err(e) => {
             println!("_cancel_with: cancel set failed: {}", e);
-            error::Error::GeneralError.i32()
+            error::Error::Unknown.i32()
         }
     }
 }
@@ -162,12 +162,12 @@ pub fn _worker() -> i32 {
             match bidi_worker(remote, caller, cancel) {
                 Ok(_) => {
                     dialer.close();
-                    return error::Error::NoError.i32();
+                    error::Error::None.i32()
                 }
                 Err(e) => {
                     println!("Dialer: bidi_worker failed: {}", e);
                     dialer.close();
-                    return error::Error::FailedIO.i32();
+                    error::Error::FailedIO.i32()
                 }
             }
         }
@@ -179,12 +179,12 @@ pub fn _worker() -> i32 {
             match bidi_worker(source, caller, cancel) {
                 Ok(_) => {
                     listener.close();
-                    return error::Error::NoError.i32();
+                    error::Error::None.i32()
                 }
                 Err(e) => {
                     println!("Listener: bidi_worker failed: {}", e);
                     listener.close();
-                    return error::Error::FailedIO.i32();
+                    error::Error::FailedIO.i32()
                 }
             }
         }
@@ -196,18 +196,18 @@ pub fn _worker() -> i32 {
             match bidi_worker(remote, source, cancel) {
                 Ok(_) => {
                     relay.close();
-                    return error::Error::NoError.i32();
+                    error::Error::None.i32()
                 }
                 Err(e) => {
                     println!("Relay: bidi_worker failed: {}", e);
                     relay.close();
-                    return error::Error::FailedIO.i32();
+                    error::Error::FailedIO.i32()
                 }
             }
         }
         _ => {
             println!("_worker: role is not set");
-            return error::Error::NotInitialized.i32();
+            error::Error::NotInitialized.i32()
         }
     }
 }
@@ -239,7 +239,7 @@ async fn bidi_worker(
             result = dst.read(&mut dst_buf) => {
                 // println!("dst.read() result = {:?}", result);
                 match result {
-                    Ok(n) if n == 0 => break, // End of stream
+                    Ok(0) => break, // End of stream
                     Ok(n) => {
                         dst_buf[0..n].reverse();
                         if let Err(e) = src.write_all(&dst_buf[0..n]).await {
@@ -257,9 +257,9 @@ async fn bidi_worker(
             result = src.read(&mut src_buf) => {
                 // println!("src.read() result = {:?}", result);
                 match result {
-                    Ok(n) if n == 0 => break, // End of stream
+                    Ok(0) => break, // End of stream
                     Ok(n) => {
-                        dst_buf[0..n].reverse();
+                        src_buf[0..n].reverse();
                         if let Err(e) = dst.write_all(&src_buf[0..n]).await {
                             println!("Error writing to dst: {:?}", e);
                             return Err(e);

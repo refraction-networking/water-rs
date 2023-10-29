@@ -6,6 +6,7 @@ extern "C" {
     pub fn host_accept() -> i32; // obtain a connection (specified by returned fd) accepted by the host
     pub fn host_dial() -> i32; // obtain a connection (specified by returned fd) dialed by the host
     pub fn host_defer(); // call when exiting
+    #[allow(dead_code)]
     pub fn pull_config() -> i32; // obtain a configuration file (specified by returned fd) from the host
 }
 
