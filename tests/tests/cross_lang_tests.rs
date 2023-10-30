@@ -4,7 +4,7 @@ use tracing::Level;
 
 use std::{
     fs::File,
-    io::{Read, Write},
+    io::{Error, ErrorKind, Read, Write},
     net::TcpListener,
 };
 
@@ -71,7 +71,16 @@ fn test_cross_lan_wasm() -> Result<(), Box<dyn std::error::Error>> {
     drop(file);
     dir.close()?;
     handle.join().unwrap();
-    handle_water.join().unwrap();
+    match handle_water.join().unwrap() {
+        Ok(_) => {}
+        Err(e) => {
+            eprintln!("Running _water_worker ERROR: {}", e);
+            return Err(Box::new(Error::new(
+                ErrorKind::Other,
+                "Failed to join _water_worker thread",
+            )));
+        }
+    };
 
     Ok(())
 }
