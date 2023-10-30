@@ -5,7 +5,7 @@ pub fn export_config(linker: &mut Linker<Host>, config_file: String) {
     linker
         .func_wrap(
             "env",
-            "request_config",
+            "pull_config",
             move |mut caller: Caller<'_, Host>| -> i32 {
                 info!("[WASM] invoking Host exported request_config ...");
 

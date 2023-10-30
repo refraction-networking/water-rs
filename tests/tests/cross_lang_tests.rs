@@ -1,5 +1,7 @@
 use water::*;
 
+use tracing::Level;
+
 use std::{
     fs::File,
     io::{Read, Write},
@@ -9,7 +11,9 @@ use std::{
 use tempfile::tempdir;
 
 #[test]
-fn test_echo() -> Result<(), Box<dyn std::error::Error>> {
+fn test_cross_lan_wasm() -> Result<(), Box<dyn std::error::Error>> {
+    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
+
     let cfg_str = r#"
 	{
 		"remote_address": "127.0.0.1",
@@ -42,8 +46,8 @@ fn test_echo() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let conf = config::WATERConfig::init(
-        String::from("./test_wasm/echo_client.wasm"),
-        String::from("_water_init"),
+        String::from("./test_wasm/plain.wasm"),
+        String::from("_water_worker"),
         String::from(file_path.to_string_lossy()),
         config::WaterBinType::Dial,
         true,
@@ -52,6 +56,9 @@ fn test_echo() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut water_client = runtime::client::WATERClient::new(conf).unwrap();
     water_client.connect("127.0.0.1", 8080).unwrap();
+    water_client.cancel_with().unwrap();
+
+    let handle_water = water_client.run_worker().unwrap();
     water_client.write(test_message).unwrap();
 
     let mut buf = vec![0; 32];
@@ -59,8 +66,12 @@ fn test_echo() -> Result<(), Box<dyn std::error::Error>> {
     assert!(res.is_ok());
     assert_eq!(res.unwrap() as usize, test_message.len());
 
+    water_client.cancel().unwrap();
+
     drop(file);
     dir.close()?;
     handle.join().unwrap();
+    handle_water.join().unwrap();
+
     Ok(())
 }

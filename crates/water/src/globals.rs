@@ -11,6 +11,7 @@ pub const WATER_BRIDGING_FN: &str = "_water_set_inbound";
 pub const READER_FN: &str = "_water_read";
 pub const WRITER_FN: &str = "_water_write";
 pub const DIAL_FN: &str = "_water_dial";
+pub const CANCEL_FN: &str = "_water_cancel_with";
 
 pub const RUNTIME_VERSION_MAJOR: i32 = 0x001aaaaa;
 pub const RUNTIME_VERSION: &str = "v0.1-alpha";

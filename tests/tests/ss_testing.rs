@@ -134,7 +134,7 @@ async fn wasm_managed_shadowsocks_async() {
     )
     .unwrap();
 
-    let mut water_client = runtime::WATERClient::new(conf).unwrap();
+    let mut water_client = runtime::client::WATERClient::new(conf).unwrap();
 
     // ==== spawn a thread to run WASM Shadowsocks client ====
     thread::spawn(move || {

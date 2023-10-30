@@ -11,7 +11,7 @@ use water_wasm::*;
 pub mod async_socks5_listener;
 
 // Export the version of this WASM module
-#[export_name = "V1"]
+#[export_name = "_water_v1"]
 pub static V1: i32 = 0;
 
 // create a mutable global variable stores a pointer to the config

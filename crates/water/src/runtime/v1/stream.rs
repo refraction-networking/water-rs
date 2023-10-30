@@ -1,6 +1,17 @@
-use crate::runtime::*;
+use crate::runtime::{stream::WATERStreamTrait, *};
 
-pub struct WATERListener<Host> {
+/// This file contains the WATERStream implementation
+/// which is a TcpStream liked definition with utilizing WASM
+
+//           UnixSocket          Connection created with Host
+//    Write =>  u2w  +----------------+  w2n
+//		       ----->|  WATERStream   |------>
+//		Caller       |  WASM Runtime  |  n2w    Destination
+//		       <-----| Decode/Encode  |<------
+//    Read  =>  w2u  +----------------+
+//	                    WATERStream
+
+pub struct WATERStream<Host> {
     // WASM functions for reading & writing
 
     // the reader in WASM (read from net -- n2w)
@@ -11,16 +22,56 @@ pub struct WATERListener<Host> {
     // returns the number of bytes written
     pub writer: Func,
 
-    pub caller_reader: UnixStream, // the reader in Caller (read from WASM -- w2u)
-    pub caller_writer: UnixStream, // the writer in Caller (write to WASM -- u2w)
+    pub caller_io: UnixStream, // the pipe for communcating between Host and WASM
 
     pub core: H2O<Host>, // core WASM runtime (engine, linker, instance, store, module)
 }
 
-impl WATERListener<Host> {
+impl WATERStreamTrait for WATERStream<Host> {
+    /// Connect to the target address with running the WASM connect function
+    fn connect(
+        &mut self,
+        conf: &WATERConfig,
+        _addr: &str,
+        _port: u16,
+    ) -> Result<(), anyhow::Error> {
+        info!("[HOST] WATERStream connecting...");
+
+        let store_lock_result = self.core.store.lock();
+
+        let mut store = match store_lock_result {
+            Ok(store) => store,
+            Err(e) => return Err(anyhow::Error::msg(format!("Failed to lock store: {}", e))),
+        };
+
+        // TODO: add addr:port sharing with WASM, for now WASM is using config.json's remote_addr:port
+        // let fnc = self.core.instance.get_func(&mut self.core.store, &conf.entry_fn).unwrap();
+        let fnc = match self.core.instance.get_func(&mut *store, DIAL_FN) {
+            Some(func) => func,
+            None => {
+                return Err(anyhow::Error::msg(format!(
+                    "{} function not found in WASM",
+                    conf.entry_fn
+                )))
+            }
+        };
+
+        match fnc.call(&mut *store, &[], &mut []) {
+            Ok(_) => {}
+            Err(e) => {
+                return Err(anyhow::Error::msg(format!(
+                    "connect function failed: {}",
+                    e
+                )))
+            }
+        }
+
+        Ok(())
+    }
+
     /// Read from the target address
-    pub fn read(&mut self, buf: &mut Vec<u8>) -> Result<i64, anyhow::Error> {
-        info!("[HOST] WATERStream reading...");
+    fn read(&mut self, buf: &mut Vec<u8>) -> Result<i64, anyhow::Error> {
+        debug!("[HOST] WATERStream reading...");
 
         let store_lock_result = self.core.store.lock();
 
@@ -52,7 +103,7 @@ impl WATERListener<Host> {
 
         // read from WASM's caller_reader
         buf.resize(nums as usize, 0);
-        match self.caller_reader.read(&mut buf[..]) {
+        match self.caller_io.read(&mut buf[..]) {
             Ok(_) => {}
             Err(e) => {
                 return Err(anyhow::Error::msg(format!(
@@ -66,11 +117,18 @@ impl WATERListener<Host> {
     }
 
     /// Write to the target address
-    pub fn write(&mut self, buf: &[u8]) -> Result<(), anyhow::Error> {
-        info!("[HOST] WATERStream writing...");
+    fn write(&mut self, buf: &[u8]) -> Result<(), anyhow::Error> {
+        debug!("[HOST] WATERStream writing...");
+
+        let store_lock_result = self.core.store.lock();
+
+        let mut store = match store_lock_result {
+            Ok(store) => store,
+            Err(e) => return Err(anyhow::Error::msg(format!("Failed to lock store: {}", e))),
+        };
 
         // write to WASM's caller_writer
-        match self.caller_writer.write_all(buf) {
+        match self.caller_io.write_all(buf) {
             Ok(_) => {}
             Err(e) => {
                 return Err(anyhow::Error::msg(format!(
@@ -79,13 +137,6 @@ impl WATERListener<Host> {
                 )))
             }
         }
-
-        let store_lock_result = self.core.store.lock();
-
-        let mut store = match store_lock_result {
-            Ok(store) => store,
-            Err(e) => return Err(anyhow::Error::msg(format!("Failed to lock store: {}", e))),
-        };
 
         let params = vec![Val::I64(buf.len() as i64)];
         let mut res = vec![Val::I64(0)];
@@ -117,59 +168,21 @@ impl WATERListener<Host> {
 
         Ok(())
     }
+}
 
-    /// Listening at the addr:port with running the WASM listen function
-    pub fn listen(
-        &mut self,
-        conf: &WATERConfig,
-        _addr: &str,
-        _port: u16,
-    ) -> Result<(), anyhow::Error> {
-        info!("[HOST] WATERStream listening...");
-
-        let store_lock_result = self.core.store.lock();
-
-        let mut store = match store_lock_result {
-            Ok(store) => store,
-            Err(e) => return Err(anyhow::Error::msg(format!("Failed to lock store: {}", e))),
-        };
-
-        // TODO: add addr:port sharing with WASM, for now WASM is using config.json's remote_addr:port
-        let fnc = self
-            .core
-            .instance
-            .get_func(&mut *store, &conf.entry_fn)
-            .unwrap();
-        match fnc.call(&mut *store, &[], &mut []) {
-            Ok(_) => {}
-            Err(e) => {
-                return Err(anyhow::Error::msg(format!(
-                    "connect function failed: {}",
-                    e
-                )))
-            }
-        }
-
-        Ok(())
-    }
-
+impl WATERStream<Host> {
     pub fn init(conf: &WATERConfig, mut core: H2O<Host>) -> Result<Self, anyhow::Error> {
-        info!("[HOST] WATERStream init...");
+        info!("[HOST] WATERStream v0_init...");
 
-        // constructing 2 pairs of UnixStream for communicating between WASM and Host
-        // returns (read_end, write_end) for caller
-        let (caller_reader, water_writer) = UnixStream::pair()?;
-        let (water_reader, caller_writer) = UnixStream::pair()?;
+        // constructing a pair of UnixStream for communicating between WASM and Host
+        let (caller_io, water_io) = UnixStream::pair()?;
 
-        let water_write_file = unsafe { cap_std::fs::File::from_raw_fd(water_writer.as_raw_fd()) };
-        let water_read_file = unsafe { cap_std::fs::File::from_raw_fd(water_reader.as_raw_fd()) };
+        let water_io_file = unsafe { cap_std::fs::File::from_raw_fd(water_io.as_raw_fd()) };
 
         // insert file here
-        let wasi_water_reader = wasmtime_wasi::sync::file::File::from_cap_std(water_read_file);
-        let wasi_water_writer = wasmtime_wasi::sync::file::File::from_cap_std(water_write_file);
+        let water_io_file = wasmtime_wasi::sync::file::File::from_cap_std(water_io_file);
 
-        std::mem::forget(water_writer);
-        std::mem::forget(water_reader);
+        std::mem::forget(water_io); // forget the water_io, so that it won't be closed
 
         let mut reader;
         let mut writer;
@@ -179,11 +192,13 @@ impl WATERListener<Host> {
                 .store
                 .lock()
                 .map_err(|e| anyhow::Error::msg(format!("Failed to lock store: {}", e)))?;
-            let ctx = store.data_mut().preview1_ctx.as_mut().unwrap();
-            let water_reader_fd =
-                ctx.push_file(Box::new(wasi_water_reader), FileAccessMode::all())?;
-            let water_writer_fd =
-                ctx.push_file(Box::new(wasi_water_writer), FileAccessMode::all())?;
+
+            let ctx = store
+                .data_mut()
+                .preview1_ctx
+                .as_mut()
+                .context("Failed to retrieve preview1_ctx from Host")?;
+            let water_io_fd = ctx.push_file(Box::new(water_io_file), FileAccessMode::all())?;
 
             let water_bridging = match core.instance.get_func(&mut *store, WATER_BRIDGING_FN) {
                 Some(func) => func,
@@ -195,10 +210,8 @@ impl WATERListener<Host> {
                 }
             };
 
-            let params = vec![
-                Val::I32(water_reader_fd as i32),
-                Val::I32(water_writer_fd as i32),
-            ];
+            // let params = vec![Val::I32(water_reader_fd as i32), Val::I32(water_writer_fd as i32)];
+            let params: Vec<Val> = vec![Val::I32(water_io_fd as i32)];
             match water_bridging.call(&mut *store, &params, &mut []) {
                 Ok(_) => {}
                 Err(e) => {
@@ -231,12 +244,11 @@ impl WATERListener<Host> {
             };
         }
 
-        let runtime = WATERListener {
+        let runtime = WATERStream {
             reader,
             writer,
 
-            caller_reader,
-            caller_writer,
+            caller_io,
 
             core,
         };

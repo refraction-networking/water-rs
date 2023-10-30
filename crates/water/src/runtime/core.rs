@@ -1,3 +1,5 @@
+use std::sync::Mutex;
+
 use crate::runtime::*;
 
 #[derive(Default, Clone)]
@@ -12,7 +14,7 @@ pub struct H2O<Host> {
     pub engine: Engine,
     pub linker: Linker<Host>,
     pub instance: Instance,
-    pub store: Store<Host>,
+    pub store: Arc<Mutex<Store<Host>>>,
     pub module: Module,
 }
 
@@ -31,29 +33,43 @@ impl H2O<Host> {
         let host = Host::default();
         let mut store = Store::new(&engine, host);
 
+        let mut error_occured = None;
+
         let version = module.exports().find_map(|global| {
             info!(
                 "[HOST] WATERCore finding exported symbols from WASM bin: {:?}",
                 global.name()
             );
             match Version::parse(global.name()) {
-                Some(v) => {
+                Some(mut v) => {
                     info!("[HOST] WATERCore found version: {:?}", v.as_str());
-                    Some(v)
+                    match v {
+                        Version::V0(_) => {
+                            info!("[HOST] WATERCore configuring for V0");
+                            match v.config_v0(conf) {
+                                Ok(v) => Some(v),
+                                Err(e) => {
+                                    info!("failed to configure for V0: {}", e);
+                                    error_occured = Some(e);
+                                    None
+                                }
+                            }
+                        }
+                        _ => Some(v),
+                    }
                 }
                 None => None,
             }
         });
 
         if version.is_none() {
+            if let Some(e) = error_occured {
+                return Err(e);
+            }
             return Err(anyhow::Error::msg("WASM module version not found"));
         }
 
-        // let path = unsafe { Dir::open_ambient_dir(".", ambient_authority())? };
-
-        // store.data_mut().preview1_ctx = Some(WasiCtxBuilder::new().inherit_stdio().preopened_dir(path, ".")?.build());
         store.data_mut().preview1_ctx = Some(WasiCtxBuilder::new().inherit_stdio().build());
-
         wasmtime_wasi::add_to_linker(&mut linker, |h: &mut Host| h.preview1_ctx.as_mut().unwrap())?;
 
         // initializing stuff for multithreading
@@ -71,15 +87,19 @@ impl H2O<Host> {
 
         // export functions -- version dependent -- has to be done before instantiate
         match &version {
-            Some(Version::V0) => {
-                v0::funcs::export_tcp_connect(&mut linker);
-                v0::funcs::export_tcplistener_create(&mut linker);
+            Some(Version::V0(v0_conf)) => {
+                let v0_conf = Arc::new(Mutex::new(v0_conf.clone()));
+                v0::funcs::export_tcp_connect(&mut linker, Arc::clone(&v0_conf));
+                v0::funcs::export_accept(&mut linker, Arc::clone(&v0_conf));
+                v0::funcs::export_defer(&mut linker, Arc::clone(&v0_conf));
             }
             Some(Version::V1) => {
                 v1::funcs::export_tcp_connect(&mut linker);
                 v1::funcs::export_tcplistener_create(&mut linker);
             }
-            _ => {} // add export funcs for other versions here
+            _ => {
+                unimplemented!("This version is not supported yet")
+            } // add export funcs for other versions here
         }
 
         // export functions -- version independent
@@ -93,7 +113,7 @@ impl H2O<Host> {
             engine,
             linker,
             instance,
-            store,
+            store: Arc::new(Mutex::new(store)),
             module,
         })
     }
@@ -108,14 +128,22 @@ impl H2O<Host> {
     pub fn _init(&mut self, debug: bool) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERCore H2O calling _init from WASM...");
 
-        let init_fn = match self.instance.get_func(&mut self.store, INIT_FN) {
+        let store_lock_result = self.store.lock();
+
+        let mut store = match store_lock_result {
+            Ok(store) => store,
+            Err(e) => return Err(anyhow::Error::msg(format!("Failed to lock store: {}", e))),
+        };
+
+        let init_fn = match self.instance.get_func(&mut *store, INIT_FN) {
             Some(func) => func,
             None => return Err(anyhow::Error::msg("init function not found")),
         };
 
         // TODO: check if we need to pass in any arguments / configs later
-        let params = vec![Val::I32(debug as i32); init_fn.ty(&self.store).params().len()];
-        match init_fn.call(&mut self.store, &params, &mut []) {
+        let params = vec![Val::I32(debug as i32); init_fn.ty(&*store).params().len()];
+        let mut res = vec![Val::I64(0); init_fn.ty(&*store).results().len()];
+        match init_fn.call(&mut *store, &params, &mut res) {
             Ok(_) => {}
             Err(e) => return Err(anyhow::Error::msg(format!("init function failed: {}", e))),
         }
@@ -126,13 +154,25 @@ impl H2O<Host> {
     pub fn _process_config(&mut self, config: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERCore H2O calling _process_config from WASM...");
 
+        let store_lock_result = self.store.lock();
+
+        let mut store = match store_lock_result {
+            Ok(store) => store,
+            Err(e) => return Err(anyhow::Error::msg(format!("Failed to lock store: {}", e))),
+        };
+
         // _required to implement _process_config(i32) in WASM, which will be parsing all the configurations
-        let config_fn = match self.instance.get_func(&mut self.store, CONFIG_FN) {
+        let config_fn = match self.instance.get_func(&mut *store, CONFIG_FN) {
             Some(func) => func,
             None => {
-                return Err(anyhow::Error::msg(
-                    "_process_config function not found in WASM",
-                ))
+                // Currently not going to return error, where V0 don't need config;
+                // TODO: also remove this function, where config will be pulled from WASM
+                info!("config function not found -- skipping");
+                return Ok(());
+
+                // return Err(anyhow::Error::msg(
+                //     "_process_config function not found in WASM",
+                // ))
             }
         };
 
@@ -148,11 +188,11 @@ impl H2O<Host> {
 
         let wasi_file = wasmtime_wasi::sync::file::File::from_cap_std(wasi_file);
 
-        let ctx = self.store.data_mut().preview1_ctx.as_mut().unwrap();
+        let ctx = store.data_mut().preview1_ctx.as_mut().unwrap();
         let config_fd = ctx.push_file(Box::new(wasi_file), FileAccessMode::all())? as i32;
 
-        let params = vec![Val::I32(config_fd); config_fn.ty(&self.store).params().len()];
-        match config_fn.call(&mut self.store, &params, &mut []) {
+        let params = vec![Val::I32(config_fd); config_fn.ty(&*store).params().len()];
+        match config_fn.call(&mut *store, &params, &mut []) {
             Ok(_) => {}
             Err(e) => {
                 return Err(anyhow::Error::msg(format!(

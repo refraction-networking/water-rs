@@ -1,10 +1,13 @@
 pub mod wasm_shared_config;
 
+use crate::runtime::version::Version;
+
 pub struct WATERConfig {
     pub filepath: String,
     pub entry_fn: String,
     pub config_wasm: String,
     pub client_type: WaterBinType,
+
     pub debug: bool,
 }
 
