@@ -155,20 +155,16 @@ impl WATERStreamTrait for WATERStream<Host> {
                 // write anything to cancel
                 match cancel_io.write_all(&[0]) {
                     Ok(_) => Ok(()),
-                    Err(e) => {
-                        Err(anyhow::Error::msg(format!(
-                            "failed to write to cancel_io: {}",
-                            e
-                        )))
-                    }
+                    Err(e) => Err(anyhow::Error::msg(format!(
+                        "failed to write to cancel_io: {}",
+                        e
+                    ))),
                 }
             }
-            None => {
-                Err(anyhow::Error::msg(format!(
-                    "cancel function failed: {}",
-                    "cancel_io is None"
-                )))
-            }
+            None => Err(anyhow::Error::msg(format!(
+                "cancel function failed: {}",
+                "cancel_io is None"
+            ))),
         }
     }
 
@@ -218,19 +214,15 @@ impl WATERStreamTrait for WATERStream<Host> {
         match self.caller_io {
             Some(ref mut caller_io) => match caller_io.read(buf) {
                 Ok(n) => Ok(n as i64),
-                Err(e) => {
-                    Err(anyhow::Error::msg(format!(
-                        "failed to read from caller_reader: {}",
-                        e
-                    )))
-                }
+                Err(e) => Err(anyhow::Error::msg(format!(
+                    "failed to read from caller_reader: {}",
+                    e
+                ))),
             },
-            None => {
-                Err(anyhow::Error::msg(format!(
-                    "read function failed: {}",
-                    "caller_io is None"
-                )))
-            }
+            None => Err(anyhow::Error::msg(format!(
+                "read function failed: {}",
+                "caller_io is None"
+            ))),
         }
     }
 
@@ -241,19 +233,15 @@ impl WATERStreamTrait for WATERStream<Host> {
         match self.caller_io {
             Some(ref mut caller_io) => match caller_io.write_all(buf) {
                 Ok(_) => Ok(()),
-                Err(e) => {
-                    Err(anyhow::Error::msg(format!(
-                        "failed to write to caller_writer: {}",
-                        e
-                    )))
-                }
+                Err(e) => Err(anyhow::Error::msg(format!(
+                    "failed to write to caller_writer: {}",
+                    e
+                ))),
             },
-            None => {
-                Err(anyhow::Error::msg(format!(
-                    "write function failed: {}",
-                    "caller_io is None"
-                )))
-            }
+            None => Err(anyhow::Error::msg(format!(
+                "write function failed: {}",
+                "caller_io is None"
+            ))),
         }
     }
 }
@@ -261,7 +249,7 @@ impl WATERStreamTrait for WATERStream<Host> {
 impl WATERStream<Host> {
     pub fn init(_conf: &WATERConfig, core: H2O<Host>) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERStream v0_init...");
-        
+
         let runtime = WATERStream {
             caller_io: None,
             cancel_io: None,

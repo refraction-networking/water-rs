@@ -1,5 +1,3 @@
-
-
 use crate::runtime::*;
 use stream::WATERStreamTrait;
 
@@ -70,9 +68,7 @@ impl WATERClient {
 
         match &mut self.stream {
             WATERClientType::Dialer(dialer) => dialer.run_entry_fn(&self.config),
-            _ => {
-                Err(anyhow::anyhow!("This client is not a Runner"))
-            }
+            _ => Err(anyhow::anyhow!("This client is not a Runner")),
         }
     }
 
