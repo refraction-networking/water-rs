@@ -171,7 +171,7 @@ impl WATERStreamTrait for WATERStream<Host> {
 }
 
 impl WATERStream<Host> {
-    pub fn init(conf: &WATERConfig, mut core: H2O<Host>) -> Result<Self, anyhow::Error> {
+    pub fn init(_conf: &WATERConfig, core: H2O<Host>) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERStream v0_init...");
 
         // constructing a pair of UnixStream for communicating between WASM and Host
@@ -184,8 +184,8 @@ impl WATERStream<Host> {
 
         std::mem::forget(water_io); // forget the water_io, so that it won't be closed
 
-        let mut reader;
-        let mut writer;
+        let reader;
+        let writer;
 
         {
             let mut store = core

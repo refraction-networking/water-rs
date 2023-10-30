@@ -24,7 +24,7 @@ impl WATERStreamTrait for WATERStream<Host> {
     /// Connect to the target address with running the WASM connect function
     fn connect(
         &mut self,
-        conf: &WATERConfig,
+        _conf: &WATERConfig,
         _addr: &str,
         _port: u16,
     ) -> Result<(), anyhow::Error> {
@@ -87,7 +87,7 @@ impl WATERStreamTrait for WATERStream<Host> {
         Ok(())
     }
 
-    fn cancel_with(&mut self, conf: &WATERConfig) -> Result<(), anyhow::Error> {
+    fn cancel_with(&mut self, _conf: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERStream v0 cancel_with...");
 
         let (caller_io, water_io) = UnixStream::pair()?;
@@ -147,7 +147,7 @@ impl WATERStreamTrait for WATERStream<Host> {
         Ok(())
     }
 
-    fn cancel(&mut self, conf: &WATERConfig) -> Result<(), anyhow::Error> {
+    fn cancel(&mut self, _conf: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERStream v0 cancel...");
 
         match self.cancel_io {
@@ -156,7 +156,7 @@ impl WATERStreamTrait for WATERStream<Host> {
                 match cancel_io.write_all(&[0]) {
                     Ok(_) => Ok(()),
                     Err(e) => {
-                        return Err(anyhow::Error::msg(format!(
+                        Err(anyhow::Error::msg(format!(
                             "failed to write to cancel_io: {}",
                             e
                         )))
@@ -164,7 +164,7 @@ impl WATERStreamTrait for WATERStream<Host> {
                 }
             }
             None => {
-                return Err(anyhow::Error::msg(format!(
+                Err(anyhow::Error::msg(format!(
                     "cancel function failed: {}",
                     "cancel_io is None"
                 )))
@@ -204,7 +204,7 @@ impl WATERStreamTrait for WATERStream<Host> {
             let mut res = vec![Val::I32(0); entry_fn.ty(&mut *store).results().len()];
             match entry_fn.call(&mut *store, &[], &mut res) {
                 Ok(_) => Ok(()),
-                Err(e) => return Err(anyhow::Error::msg(format!("function failed: {}", e))),
+                Err(e) => Err(anyhow::Error::msg(format!("function failed: {}", e))),
             }
         });
 
@@ -219,14 +219,14 @@ impl WATERStreamTrait for WATERStream<Host> {
             Some(ref mut caller_io) => match caller_io.read(buf) {
                 Ok(n) => Ok(n as i64),
                 Err(e) => {
-                    return Err(anyhow::Error::msg(format!(
+                    Err(anyhow::Error::msg(format!(
                         "failed to read from caller_reader: {}",
                         e
                     )))
                 }
             },
             None => {
-                return Err(anyhow::Error::msg(format!(
+                Err(anyhow::Error::msg(format!(
                     "read function failed: {}",
                     "caller_io is None"
                 )))
@@ -242,14 +242,14 @@ impl WATERStreamTrait for WATERStream<Host> {
             Some(ref mut caller_io) => match caller_io.write_all(buf) {
                 Ok(_) => Ok(()),
                 Err(e) => {
-                    return Err(anyhow::Error::msg(format!(
+                    Err(anyhow::Error::msg(format!(
                         "failed to write to caller_writer: {}",
                         e
                     )))
                 }
             },
             None => {
-                return Err(anyhow::Error::msg(format!(
+                Err(anyhow::Error::msg(format!(
                     "write function failed: {}",
                     "caller_io is None"
                 )))
@@ -259,7 +259,7 @@ impl WATERStreamTrait for WATERStream<Host> {
 }
 
 impl WATERStream<Host> {
-    pub fn init(conf: &WATERConfig, mut core: H2O<Host>) -> Result<Self, anyhow::Error> {
+    pub fn init(_conf: &WATERConfig, core: H2O<Host>) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERStream v0_init...");
         
         let runtime = WATERStream {

@@ -1,4 +1,4 @@
-use std::thread::JoinHandle;
+
 
 use crate::runtime::*;
 use stream::WATERStreamTrait;
@@ -71,7 +71,7 @@ impl WATERClient {
         match &mut self.stream {
             WATERClientType::Dialer(dialer) => dialer.run_entry_fn(&self.config),
             _ => {
-                return Err(anyhow::anyhow!("This client is not a Runner"));
+                Err(anyhow::anyhow!("This client is not a Runner"))
             }
         }
     }

@@ -32,7 +32,7 @@ impl WATERRunner<Host> {
         Ok(())
     }
 
-    pub fn init(conf: &WATERConfig, mut core: H2O<Host>) -> Result<Self, anyhow::Error> {
+    pub fn init(_conf: &WATERConfig, core: H2O<Host>) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERRunner init...");
 
         let runtime = WATERRunner { core };

@@ -56,7 +56,7 @@ impl Version {
     pub fn as_str(&self) -> &'static str {
         match self {
             Version::Unknown => "_water_setting_up",
-            Version::V0(v0_conf) => "_water_v0",
+            Version::V0(_v0_conf) => "_water_v0",
             Version::V1 => "_water_v1",
             Version::V2 => "_water_v2",
         }
@@ -82,7 +82,7 @@ impl From<&Version> for &'static str {
     fn from(v: &Version) -> &'static str {
         match v {
             Version::Unknown => "_water_setting_up",
-            Version::V0(v0_conf) => "_water_v0",
+            Version::V0(_v0_conf) => "_water_v0",
             Version::V1 => "_water_v1",
             Version::V2 => "_water_v2",
         }

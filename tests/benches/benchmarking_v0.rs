@@ -73,7 +73,7 @@ fn benchmarking_v0_echo() -> Result<(), anyhow::Error> {
             config::WaterBinType::Dial,
             true,
         )?;
-        let mut water_client = runtime::WATERClient::new(conf)?;
+        let mut water_client = runtime::client::WATERClient::new(conf)?;
         water_client.connect("", 0)?;
 
         // let mut water_client = TcpStream::connect(("127.0.0.1", 8088))?;

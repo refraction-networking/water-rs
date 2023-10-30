@@ -59,7 +59,7 @@ pub fn export_accept(linker: &mut Linker<Host>, config: Arc<Mutex<V0Config>>) {
 // TODO: implement this
 pub fn export_defer(linker: &mut Linker<Host>, config: Arc<Mutex<V0Config>>) {
     linker
-        .func_wrap("env", "host_defer", move |mut caller: Caller<'_, Host>| {
+        .func_wrap("env", "host_defer", move |_caller: Caller<'_, Host>| {
             info!("[WASM] invoking Host exported host_defer func...");
 
             let mut config = config.lock().unwrap();

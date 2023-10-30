@@ -153,7 +153,7 @@ impl WATERListener<Host> {
         Ok(())
     }
 
-    pub fn init(conf: &WATERConfig, mut core: H2O<Host>) -> Result<Self, anyhow::Error> {
+    pub fn init(_conf: &WATERConfig, core: H2O<Host>) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERStream init...");
 
         // constructing 2 pairs of UnixStream for communicating between WASM and Host
@@ -171,8 +171,8 @@ impl WATERListener<Host> {
         std::mem::forget(water_writer);
         std::mem::forget(water_reader);
 
-        let mut reader;
-        let mut writer;
+        let reader;
+        let writer;
 
         {
             let mut store = core
