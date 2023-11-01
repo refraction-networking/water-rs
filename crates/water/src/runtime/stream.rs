@@ -124,7 +124,6 @@ impl WATERStream<Host> {
         info!("[HOST] WATERStream connecting...");
 
         // TODO: add addr:port sharing with WASM, for now WASM is using config.json's remote_addr:port
-        // let fnc = self.core.instance.get_func(&mut self.core.store, &conf.entry_fn).unwrap();
         let fnc = match self.core.instance.get_func(&mut self.core.store, DIAL_FN) {
             Some(func) => func,
             None => {
