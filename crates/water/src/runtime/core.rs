@@ -94,12 +94,19 @@ impl H2O<Host> {
 
         // export functions -- version dependent -- has to be done before instantiate
         match &version {
-            Some(Version::V0(v0_conf)) => {
-                let v0_conf = Arc::new(Mutex::new(v0_conf.clone()));
-                v0::funcs::export_tcp_connect(&mut linker, Arc::clone(&v0_conf))?;
-                v0::funcs::export_accept(&mut linker, Arc::clone(&v0_conf))?;
-                v0::funcs::export_defer(&mut linker, Arc::clone(&v0_conf))?;
-            }
+            Some(Version::V0(ref conf)) => match conf {
+                Some(v0_conf) => {
+                    let v0_conf = Arc::new(Mutex::new(v0_conf.clone()));
+                    v0::funcs::export_tcp_connect(&mut linker, Arc::clone(&v0_conf))?;
+                    v0::funcs::export_accept(&mut linker, Arc::clone(&v0_conf))?;
+                    v0::funcs::export_defer(&mut linker, Arc::clone(&v0_conf))?;
+                }
+                None => {
+                    return Err(anyhow::anyhow!(
+                        "v0_conf wasn't initialized / setup correctly"
+                    ))?;
+                }
+            },
             Some(Version::V1) => {
                 v1::funcs::export_tcp_connect(&mut linker)?;
                 v1::funcs::export_tcplistener_create(&mut linker)?;

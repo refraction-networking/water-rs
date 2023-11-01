@@ -6,7 +6,7 @@ use crate::runtime::*;
 
 pub enum Version {
     Unknown,
-    V0(V0Config),
+    V0(Option<V0Config>),
     V1,
     V2,
 }
@@ -30,7 +30,7 @@ impl Version {
                     wasm_config.remote_port,
                 )?;
                 // v0_conf.conn = V0CRole::Dialer(std::net::TcpStream::connect(format!("{}:{}", wasm_config.remote_address, wasm_config.remote_port))?);
-                Version::V0(v0_conf)
+                Version::V0(Some(v0_conf))
             }
             WaterBinType::Listen => {
                 let v0_conf = V0Config::init(
@@ -39,7 +39,7 @@ impl Version {
                     wasm_config.local_port,
                 )?;
                 // v0_conf.conn = V0CRole::Listener(std::net::TcpListener::bind(format!("{}:{}", wasm_config.local_address, wasm_config.local_port))?);
-                Version::V0(v0_conf)
+                Version::V0(Some(v0_conf))
             }
             WaterBinType::Unknown => {
                 Version::Unknown // WATER is setting up?
@@ -68,9 +68,7 @@ impl FromStr for Version {
 
     fn from_str(s: &str) -> Result<Version, ()> {
         match s {
-            "_water_v0" => Ok(Version::V0(
-                V0Config::init("".into(), "".into(), 0).unwrap(),
-            )),
+            "_water_v0" => Ok(Version::V0(None)),
             "_water_v1" => Ok(Version::V1),
             "_water_v2" => Ok(Version::V2),
             _ => Err(()),

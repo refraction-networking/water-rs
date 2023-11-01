@@ -179,7 +179,9 @@ impl WATERStreamTrait for WATERStream<Host> {
 
         let store = Arc::clone(&self.core.store);
         let entry_fn = {
-            let mut store = store.lock().unwrap();
+            let mut store = store
+                .lock()
+                .map_err(|e| anyhow::Error::msg(format!("Failed to lock store: {}", e)))?;
             match self
                 .core
                 .instance
@@ -196,7 +198,9 @@ impl WATERStreamTrait for WATERStream<Host> {
         };
 
         let handle = std::thread::spawn(move || {
-            let mut store = store.lock().unwrap();
+            let mut store = store
+                .lock()
+                .map_err(|e| anyhow::Error::msg(format!("Failed to lock store: {}", e)))?;
             let mut res = vec![Val::I32(0); entry_fn.ty(&mut *store).results().len()];
             match entry_fn.call(&mut *store, &[], &mut res) {
                 Ok(_) => Ok(()),
