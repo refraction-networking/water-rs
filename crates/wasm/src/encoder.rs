@@ -1,22 +1,26 @@
-use super::*;
-
 use tokio::io::AsyncWrite;
 
-// Developer Guide: Logic for packaging
+use std::io;
 
-// A trait for a encoder, developers should implement this trait and pass it to _write_to_outbound
+/// The `Encoder` trait implements the core logic for encapsulating stream data into an opaque
+/// format for transmission. This can include encryption, compression, or other transformations as
+/// well as things like Handshakes as the encoder is given the ability to drive the connection
+/// negotiation once called.
 pub trait Encoder {
-    fn encode(&self, input: &[u8], output: &mut [u8]) -> Result<u32, anyhow::Error>;
+    fn encode(&self, input: &[u8], output: &mut [u8]) -> io::Result<usize>;
 }
-
-// A default encoder that does just copy + paste
+/// The default encoder implemting a straight copy from input to output.
 pub struct DefaultEncoder;
 
 impl Encoder for DefaultEncoder {
-    fn encode(&self, input: &[u8], output: &mut [u8]) -> Result<u32, anyhow::Error> {
-        let len = input.len();
+    fn encode(&self, input: &[u8], output: &mut [u8]) -> io::Result<usize> {
+        let mut len = input.len();
+        if len < output.len() {
+            len = output.len();
+        }
+
         output[..len].copy_from_slice(&input[..len]);
-        Ok(len as u32)
+        Ok(len)
     }
 }
 

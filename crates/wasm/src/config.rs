@@ -1,12 +1,15 @@
-use super::*;
+use std::net::SocketAddr;
+
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
 
 // A Config currently contains the local + remote ip & port
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub local_address: String,
-    pub local_port: u32,
+    pub local_port: u16,
     pub remote_address: String,
-    pub remote_port: u32,
+    pub remote_port: u16,
 }
 
 impl Default for Config {
@@ -25,6 +28,13 @@ impl Config {
             remote_port: 8082,
         }
     }
+
+    pub fn dst_addr(&self) -> Result<SocketAddr> {
+        Ok(SocketAddr::new(
+            self.remote_address.parse()?,
+            self.remote_port,
+        ))
+    }
 }
 
 // ============ Some implementation for V1 ============
@@ -33,13 +43,13 @@ impl Config {
 #[derive(Serialize, Deserialize)]
 pub struct StreamConfigV1 {
     pub addr: String,
-    pub port: u32,
+    pub port: u16,
     pub name: String,
 }
 
 // #[cfg(feature = "v1")]
 impl StreamConfigV1 {
-    pub fn init(addr: String, port: u32, name: String) -> Self {
+    pub fn init(addr: String, port: u16, name: String) -> Self {
         StreamConfigV1 { addr, port, name }
     }
 }

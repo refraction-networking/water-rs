@@ -1,9 +1,11 @@
-use super::*;
+use crate::{Config, ConnStream, Decoder, Encoder, Tunnel};
 
-use anyhow::{anyhow, Ok};
+use tracing::info;
+
+use std::io;
+use std::os::fd::AsRawFd;
 
 pub struct Dialer {
-    pub file_conn: Connection,
     pub config: Config,
 }
 
@@ -16,51 +18,33 @@ impl Default for Dialer {
 impl Dialer {
     pub fn new() -> Self {
         Dialer {
-            file_conn: Connection::new(),
             config: Config::new(),
         }
     }
 
-    pub fn dial(&mut self) -> Result<i32, anyhow::Error> {
-        info!("[WASM] running in dial func...");
-
-        // FIXME: hardcoded the filename for now, make it a config later
-        let fd: i32 = self.tcp_connect()?;
-
-        if fd < 0 {
-            eprintln!("failed to create connection to remote");
-            return Err(anyhow!("failed to create connection to remote"));
-        }
-
-        self.file_conn.set_outbound(
-            fd,
-            ConnStream::TcpStream(unsafe { std::net::TcpStream::from_raw_fd(fd) }),
-        );
-
-        Ok(fd)
+    pub fn with_config(config: Config) -> Self {
+        Dialer { config }
     }
 
-    fn tcp_connect(&self) -> Result<i32, anyhow::Error> {
-        let stream = StreamConfigV1::init(
-            self.config.remote_address.clone(),
-            self.config.remote_port,
-            "CONNECT_REMOTE".to_string(),
-        );
+    pub fn set_config(mut self, config: Config) -> Self {
+        self.config = config;
+        self
+    }
 
-        let encoded: Vec<u8> = bincode::serialize(&stream).expect("Failed to serialize");
+    pub fn dial<E, D>(&mut self) -> io::Result<Tunnel<E, D>>
+    where
+        E: Encoder,
+        D: Decoder,
+    {
+        info!("[WASM] running in dial func...");
 
-        let address = encoded.as_ptr() as u32;
-        let size = encoded.len() as u32;
+        let addr = self.config.dst_addr().map_err(|e| {
+            eprintln!("[WASM] > ERROR: {}", e);
+            std::io::Error::new(std::io::ErrorKind::Other, "failed to get dst addr")
+        })?;
 
-        let fd = unsafe {
-            // connect_tcp_unix(len, xxxx)
-            connect_tcp(address, size)
-        };
+        let outbound = crate::net::TcpStream::connect(addr)?;
 
-        if fd < 0 {
-            return Err(anyhow!("failed to connect to remote"));
-        }
-
-        Ok(fd)
+        Tunnel::new().set_outbound(outbound.as_raw_fd(), ConnStream::TcpStream(outbound))
     }
 }

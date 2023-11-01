@@ -149,7 +149,7 @@ pub fn _dial_server() -> Result<TcpStream, std::io::Error> {
     tcp_dialer.config.remote_address = "127.0.0.1".to_string();
     tcp_dialer.config.remote_port = 8388;
 
-    let _tcp_fd = tcp_dialer.dial().expect("Failed to dial");
+    tcp_dialer.dial().expect("Failed to dial");
 
     let server_stream = match tcp_dialer.file_conn.outbound_conn.file.unwrap() {
         ConnStream::TcpStream(s) => s,
@@ -230,7 +230,7 @@ pub fn _listener_creation() -> Result<i32, std::io::Error> {
     let address = encoded.as_ptr() as u32;
     let size = encoded.len() as u32;
 
-    let fd = unsafe { create_listen(address, size) };
+    let fd = unsafe { water_wasm::net::c::create_listen(address, size) };
 
     if fd < 0 {
         return Err(std::io::Error::new(
