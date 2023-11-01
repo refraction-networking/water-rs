@@ -139,7 +139,8 @@ impl WATERListener<Host> {
             .core
             .instance
             .get_func(&mut *store, &conf.entry_fn)
-            .unwrap();
+            .context(format!("Failed to get function {}", &conf.entry_fn))?;
+
         match fnc.call(&mut *store, &[], &mut []) {
             Ok(_) => {}
             Err(e) => {
@@ -179,7 +180,11 @@ impl WATERListener<Host> {
                 .store
                 .lock()
                 .map_err(|e| anyhow::Error::msg(format!("Failed to lock store: {}", e)))?;
-            let ctx = store.data_mut().preview1_ctx.as_mut().unwrap();
+            let ctx = store
+                .data_mut()
+                .preview1_ctx
+                .as_mut()
+                .ok_or(anyhow::anyhow!("preview1_ctx in Store is None"))?;
             let water_reader_fd =
                 ctx.push_file(Box::new(wasi_water_reader), FileAccessMode::all())?;
             let water_writer_fd =

@@ -2,7 +2,10 @@ use crate::runtime::v0::config::V0Config;
 use crate::runtime::*;
 use std::sync::{Arc, Mutex};
 
-pub fn export_tcp_connect(linker: &mut Linker<Host>, config: Arc<Mutex<V0Config>>) {
+pub fn export_tcp_connect(
+    linker: &mut Linker<Host>,
+    config: Arc<Mutex<V0Config>>,
+) -> Result<(), anyhow::Error> {
     linker
         .func_wrap(
             "env",
@@ -22,14 +25,25 @@ pub fn export_tcp_connect(linker: &mut Linker<Host>, config: Arc<Mutex<V0Config>
                 let socket_file: Box<dyn WasiFile> = wasmtime_wasi::net::Socket::from(tcp).into();
 
                 // Get the WasiCtx of the caller(WASM), then insert_file into it
-                let ctx: &mut WasiCtx = caller.data_mut().preview1_ctx.as_mut().unwrap();
-                ctx.push_file(socket_file, FileAccessMode::all()).unwrap() as i32
+                let ctx: &mut WasiCtx = caller
+                    .data_mut()
+                    .preview1_ctx
+                    .as_mut()
+                    .context("preview1_ctx in Store is None")
+                    .unwrap();
+                ctx.push_file(socket_file, FileAccessMode::all())
+                    .context("Failed to push file into WASM")
+                    .unwrap() as i32
             },
         )
-        .unwrap();
+        .context("Failed to export Dial function to WASM")?;
+    Ok(())
 }
 
-pub fn export_accept(linker: &mut Linker<Host>, config: Arc<Mutex<V0Config>>) {
+pub fn export_accept(
+    linker: &mut Linker<Host>,
+    config: Arc<Mutex<V0Config>>,
+) -> Result<(), anyhow::Error> {
     linker
         .func_wrap(
             "env",
@@ -49,15 +63,26 @@ pub fn export_accept(linker: &mut Linker<Host>, config: Arc<Mutex<V0Config>>) {
                 let socket_file: Box<dyn WasiFile> = wasmtime_wasi::net::Socket::from(tcp).into();
 
                 // Get the WasiCtx of the caller(WASM), then insert_file into it
-                let ctx: &mut WasiCtx = caller.data_mut().preview1_ctx.as_mut().unwrap();
-                ctx.push_file(socket_file, FileAccessMode::all()).unwrap() as i32
+                let ctx: &mut WasiCtx = caller
+                    .data_mut()
+                    .preview1_ctx
+                    .as_mut()
+                    .context("preview1_ctx in Store is None")
+                    .unwrap();
+                ctx.push_file(socket_file, FileAccessMode::all())
+                    .context("Failed to push file into WASM")
+                    .unwrap() as i32
             },
         )
-        .unwrap();
+        .context("Failed to export TcpListener create function to WASM")?;
+    Ok(())
 }
 
 // TODO: implement this
-pub fn export_defer(linker: &mut Linker<Host>, config: Arc<Mutex<V0Config>>) {
+pub fn export_defer(
+    linker: &mut Linker<Host>,
+    config: Arc<Mutex<V0Config>>,
+) -> Result<(), anyhow::Error> {
     linker
         .func_wrap("env", "host_defer", move |_caller: Caller<'_, Host>| {
             info!("[WASM] invoking Host exported host_defer func...");
@@ -66,5 +91,6 @@ pub fn export_defer(linker: &mut Linker<Host>, config: Arc<Mutex<V0Config>>) {
 
             config.defer();
         })
-        .unwrap();
+        .context("Failed to export defer function to WASM")?;
+    Ok(())
 }

@@ -70,6 +70,11 @@ impl H2O<Host> {
         }
 
         store.data_mut().preview1_ctx = Some(WasiCtxBuilder::new().inherit_stdio().build());
+
+        if store.data().preview1_ctx.is_none() {
+            return Err(anyhow::anyhow!("Failed to retrieve preview1_ctx from Host"));
+        }
+
         wasmtime_wasi::add_to_linker(&mut linker, |h: &mut Host| h.preview1_ctx.as_mut().unwrap())?;
 
         // initializing stuff for multithreading
@@ -81,7 +86,9 @@ impl H2O<Host> {
             )?));
 
             wasmtime_wasi_threads::add_to_linker(&mut linker, &store, &module, |h: &mut Host| {
-                h.wasi_threads.as_ref().unwrap()
+                h.wasi_threads
+                    .as_ref()
+                    .context("Failed to get ref of wasi_threads from Host")?
             })?;
         }
 
@@ -89,13 +96,13 @@ impl H2O<Host> {
         match &version {
             Some(Version::V0(v0_conf)) => {
                 let v0_conf = Arc::new(Mutex::new(v0_conf.clone()));
-                v0::funcs::export_tcp_connect(&mut linker, Arc::clone(&v0_conf));
-                v0::funcs::export_accept(&mut linker, Arc::clone(&v0_conf));
-                v0::funcs::export_defer(&mut linker, Arc::clone(&v0_conf));
+                v0::funcs::export_tcp_connect(&mut linker, Arc::clone(&v0_conf))?;
+                v0::funcs::export_accept(&mut linker, Arc::clone(&v0_conf))?;
+                v0::funcs::export_defer(&mut linker, Arc::clone(&v0_conf))?;
             }
             Some(Version::V1) => {
-                v1::funcs::export_tcp_connect(&mut linker);
-                v1::funcs::export_tcplistener_create(&mut linker);
+                v1::funcs::export_tcp_connect(&mut linker)?;
+                v1::funcs::export_tcplistener_create(&mut linker)?;
             }
             _ => {
                 unimplemented!("This version is not supported yet")
@@ -103,12 +110,17 @@ impl H2O<Host> {
         }
 
         // export functions -- version independent
-        version_common::funcs::export_config(&mut linker, conf.config_wasm.clone());
+        version_common::funcs::export_config(&mut linker, conf.config_wasm.clone())?;
 
         let instance = linker.instantiate(&mut store, &module)?;
 
         Ok(H2O {
-            version: version.unwrap(),
+            version: match version {
+                Some(v) => v,
+                None => {
+                    return Err(anyhow::anyhow!("Version is None"));
+                }
+            },
 
             engine,
             linker,
@@ -178,8 +190,13 @@ impl H2O<Host> {
 
         // Obtain the directory path and file name from config_wasm
         let full_path = Path::new(&config.config_wasm);
-        let parent_dir = full_path.parent().unwrap(); // Assumes config_wasm has a parent directory
-        let file_name = full_path.file_name().unwrap().to_str().unwrap(); // Assumes file_name is valid UTF-8
+        let parent_dir = full_path
+            .parent()
+            .ok_or_else(|| anyhow::anyhow!("config_wasm does not have a parent directory"))?; // Assumes config_wasm has a parent directory
+        let file_name = full_path
+            .file_name()
+            .and_then(|os_str| os_str.to_str())
+            .ok_or_else(|| anyhow::anyhow!("file_name is not valid UTF-8"))?; // Assumes file_name is valid UTF-8
 
         // Open the parent directory
         let dir = Dir::open_ambient_dir(parent_dir, ambient_authority())?;
@@ -188,7 +205,11 @@ impl H2O<Host> {
 
         let wasi_file = wasmtime_wasi::sync::file::File::from_cap_std(wasi_file);
 
-        let ctx = store.data_mut().preview1_ctx.as_mut().unwrap();
+        let ctx = store
+            .data_mut()
+            .preview1_ctx
+            .as_mut()
+            .ok_or(anyhow::anyhow!("preview1_ctx in Store is None"))?;
         let config_fd = ctx.push_file(Box::new(wasi_file), FileAccessMode::all())? as i32;
 
         let params = vec![Val::I32(config_fd); config_fn.ty(&*store).params().len()];
