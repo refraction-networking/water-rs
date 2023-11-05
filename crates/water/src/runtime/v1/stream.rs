@@ -31,11 +31,11 @@ impl WATERStreamTrait for WATERStream<Host> {
     /// Connect to the target address with running the WASM connect function
     fn connect(
         &mut self,
-        conf: &WATERConfig,
+        _conf: &WATERConfig,
         _addr: &str,
         _port: u16,
     ) -> Result<(), anyhow::Error> {
-        info!("[HOST] WATERStream connecting...");
+        info!("[HOST] WATERStream v1_preview connecting...");
 
         let store_lock_result = self.core.store.lock();
 
@@ -44,14 +44,12 @@ impl WATERStreamTrait for WATERStream<Host> {
             Err(e) => return Err(anyhow::Error::msg(format!("Failed to lock store: {}", e))),
         };
 
-        // TODO: add addr:port sharing with WASM, for now WASM is using config.json's remote_addr:port
-        // let fnc = self.core.instance.get_func(&mut self.core.store, &conf.entry_fn).unwrap();
         let fnc = match self.core.instance.get_func(&mut *store, DIAL_FN) {
             Some(func) => func,
             None => {
                 return Err(anyhow::Error::msg(format!(
                     "{} function not found in WASM",
-                    conf.entry_fn
+                    DIAL_FN
                 )))
             }
         };
@@ -71,7 +69,7 @@ impl WATERStreamTrait for WATERStream<Host> {
 
     /// Read from the target address
     fn read(&mut self, buf: &mut Vec<u8>) -> Result<i64, anyhow::Error> {
-        debug!("[HOST] WATERStream reading...");
+        debug!("[HOST] WATERStream v1_preview reading...");
 
         let store_lock_result = self.core.store.lock();
 
@@ -118,7 +116,7 @@ impl WATERStreamTrait for WATERStream<Host> {
 
     /// Write to the target address
     fn write(&mut self, buf: &[u8]) -> Result<(), anyhow::Error> {
-        debug!("[HOST] WATERStream writing...");
+        debug!("[HOST] WATERStream v1_preview writing...");
 
         let store_lock_result = self.core.store.lock();
 
@@ -172,7 +170,7 @@ impl WATERStreamTrait for WATERStream<Host> {
 
 impl WATERStream<Host> {
     pub fn init(_conf: &WATERConfig, core: H2O<Host>) -> Result<Self, anyhow::Error> {
-        info!("[HOST] WATERStream v0_init...");
+        info!("[HOST] WATERStream v1_preview...");
 
         // constructing a pair of UnixStream for communicating between WASM and Host
         let (caller_io, water_io) = UnixStream::pair()?;
@@ -210,7 +208,6 @@ impl WATERStream<Host> {
                 }
             };
 
-            // let params = vec![Val::I32(water_reader_fd as i32), Val::I32(water_writer_fd as i32)];
             let params: Vec<Val> = vec![Val::I32(water_io_fd as i32)];
             match water_bridging.call(&mut *store, &params, &mut []) {
                 Ok(_) => {}

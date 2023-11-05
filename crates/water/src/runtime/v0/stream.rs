@@ -33,6 +33,7 @@ impl WATERStreamTrait for WATERStream<Host> {
         let (caller_io, water_io) = UnixStream::pair()?;
         self.caller_io = Some(caller_io);
 
+        // push the WATM end of the Unixpipe to WATM
         let water_io_file = unsafe { cap_std::fs::File::from_raw_fd(water_io.as_raw_fd()) };
 
         // insert file here
@@ -64,7 +65,7 @@ impl WATERStreamTrait for WATERStream<Host> {
             }
         };
 
-        // let params = vec![Val::I32(water_reader_fd as i32), Val::I32(water_writer_fd as i32)];
+        // calling the WASM dial function
         let params: Vec<Val> = vec![Val::I32(water_io_fd as i32)];
         let mut res = vec![Val::I32(0); _water_dial.ty(&*store).results().len()];
         match _water_dial.call(&mut *store, &params, &mut res) {
@@ -119,12 +120,11 @@ impl WATERStreamTrait for WATERStream<Host> {
             None => {
                 return Err(anyhow::Error::msg(format!(
                     "{} function not found in WASM",
-                    DIAL_FN
+                    CANCEL_FN
                 )))
             }
         };
 
-        // let params = vec![Val::I32(water_reader_fd as i32), Val::I32(water_writer_fd as i32)];
         let params: Vec<Val> = vec![Val::I32(water_io_fd as i32)];
         let mut res = vec![Val::I32(0); _water_cancel_with.ty(&*store).results().len()];
         match _water_cancel_with.call(&mut *store, &params, &mut res) {
@@ -197,6 +197,7 @@ impl WATERStreamTrait for WATERStream<Host> {
             }
         };
 
+        // run the entry_fn in a thread -- Host will still have the ability to control it (e.g. with cancel)
         let handle = std::thread::spawn(move || {
             let mut store = store
                 .lock()
@@ -212,7 +213,7 @@ impl WATERStreamTrait for WATERStream<Host> {
     }
 
     fn read(&mut self, buf: &mut Vec<u8>) -> Result<i64, anyhow::Error> {
-        info!("[HOST] WATERStream reading...");
+        info!("[HOST] WATERStream v0 reading...");
 
         // read from WASM's caller_reader
         match self.caller_io {
@@ -231,7 +232,7 @@ impl WATERStreamTrait for WATERStream<Host> {
     }
 
     fn write(&mut self, buf: &[u8]) -> Result<(), anyhow::Error> {
-        info!("[HOST] WATERStream writing...");
+        info!("[HOST] WATERStream v0 writing...");
 
         // write to WASM's caller_writer
         match self.caller_io {

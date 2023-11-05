@@ -19,7 +19,10 @@ impl Version {
         }
     }
 
+    // Current API v0 needs some configurations at the beginning
     pub fn config_v0(&mut self, conf: &WATERConfig) -> Result<Version, anyhow::Error> {
+        info!("[HOST] WATERCore configuring for V0");
+
         let wasm_config = Config::from(&conf.config_wasm)?;
 
         let v = match conf.client_type {
@@ -29,7 +32,6 @@ impl Version {
                     wasm_config.remote_address.clone(),
                     wasm_config.remote_port,
                 )?;
-                // v0_conf.conn = V0CRole::Dialer(std::net::TcpStream::connect(format!("{}:{}", wasm_config.remote_address, wasm_config.remote_port))?);
                 Version::V0(Some(v0_conf))
             }
             WaterBinType::Listen => {
@@ -38,12 +40,10 @@ impl Version {
                     wasm_config.local_address.clone(),
                     wasm_config.local_port,
                 )?;
-                // v0_conf.conn = V0CRole::Listener(std::net::TcpListener::bind(format!("{}:{}", wasm_config.local_address, wasm_config.local_port))?);
                 Version::V0(Some(v0_conf))
             }
             WaterBinType::Unknown => {
                 Version::Unknown // WATER is setting up?
-                                 // return Err(anyhow::anyhow!("Invalid client type"));
             }
             _ => {
                 unimplemented!("This client type is not supported yet")

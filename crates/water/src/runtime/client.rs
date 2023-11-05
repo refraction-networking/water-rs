@@ -61,6 +61,35 @@ impl WATERClient {
         self.debug = debug;
     }
 
+    pub fn connect(&mut self, addr: &str, port: u16) -> Result<(), anyhow::Error> {
+        info!("[HOST] WATERClient connecting ...");
+
+        match &mut self.stream {
+            WATERClientType::Dialer(dialer) => {
+                dialer.connect(&self.config, addr, port)?;
+            }
+            _ => {
+                return Err(anyhow::anyhow!("[HOST] This client is not a Dialer"));
+            }
+        }
+        Ok(())
+    }
+
+    pub fn listen(&mut self, addr: &str, port: u16) -> Result<(), anyhow::Error> {
+        info!("[HOST] WATERClient listening ...");
+
+        match &mut self.stream {
+            WATERClientType::Listener(listener) => {
+                listener.listen(&self.config, addr, port)?;
+            }
+            _ => {
+                return Err(anyhow::anyhow!("[HOST] This client is not a Listener"));
+            }
+        }
+        Ok(())
+    }
+
+    // this will start a worker(WATM) in a separate thread -- returns a JoinHandle
     pub fn run_worker(
         &mut self,
     ) -> Result<std::thread::JoinHandle<Result<(), anyhow::Error>>, anyhow::Error> {
@@ -72,6 +101,7 @@ impl WATERClient {
         }
     }
 
+    // this will run the extry_fn(WATM) in the current thread -- replace Host when running
     pub fn execute(&mut self) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERClient Executing ...");
 
@@ -89,6 +119,7 @@ impl WATERClient {
         Ok(())
     }
 
+    // v0 func for Host to set pipe for canceling later
     pub fn cancel_with(&mut self) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERClient cancel_with ...");
 
@@ -97,12 +128,14 @@ impl WATERClient {
                 dialer.cancel_with(&self.config)?;
             }
             _ => {
-                return Err(anyhow::anyhow!("This client is not a Dialer"));
+                // for now this is only implemented for v0 dialer
+                return Err(anyhow::anyhow!("This client is not a v0 Dialer"));
             }
         }
         Ok(())
     }
 
+    // v0 func for Host to terminate the separate thread running worker(WATM)
     pub fn cancel(&mut self) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERClient canceling ...");
 
@@ -111,41 +144,16 @@ impl WATERClient {
                 dialer.cancel(&self.config)?;
             }
             _ => {
-                return Err(anyhow::anyhow!("This client is not a Dialer"));
-            }
-        }
-        Ok(())
-    }
-
-    pub fn connect(&mut self, addr: &str, port: u16) -> Result<(), anyhow::Error> {
-        info!("[HOST] WATERClient connecting ...");
-
-        match &mut self.stream {
-            WATERClientType::Dialer(dialer) => {
-                dialer.connect(&self.config, addr, port)?;
-            }
-            _ => {
-                return Err(anyhow::anyhow!("This client is not a listener"));
-            }
-        }
-        Ok(())
-    }
-
-    pub fn listen(&mut self, addr: &str, port: u16) -> Result<(), anyhow::Error> {
-        info!("[HOST] WATERClient listening ...");
-
-        match &mut self.stream {
-            WATERClientType::Listener(listener) => {
-                listener.listen(&self.config, addr, port)?;
-            }
-            _ => {
-                return Err(anyhow::anyhow!("This client is not a listener"));
+                // for now this is only implemented for v0 dialer
+                return Err(anyhow::anyhow!("This client is not a v0 Dialer"));
             }
         }
         Ok(())
     }
 
     pub fn read(&mut self, buf: &mut Vec<u8>) -> Result<i64, anyhow::Error> {
+        info!("[HOST] WATERClient reading ...");
+
         let read_bytes = match &mut self.stream {
             WATERClientType::Dialer(dialer) => dialer.read(buf)?,
             WATERClientType::Listener(listener) => listener.read(buf)?,
