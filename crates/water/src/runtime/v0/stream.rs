@@ -1,4 +1,4 @@
-use crate::runtime::{stream::WATERStreamTrait, *, transport::WATERTransportTrait};
+use crate::runtime::{stream::WATERStreamTrait, transport::WATERTransportTrait, *};
 // use crate::runtime::{stream::WATERStreamTrait, *, v0::transport::WATERTransportTraitV0, transport::WATERTransportTrait};
 
 /// This file contains the WATERStream implementation
@@ -45,10 +45,7 @@ impl WATERTransportTrait for WATERStream<Host> {
 
 impl WATERStreamTrait for WATERStream<Host> {
     /// Connect to the target address with running the WASM connect function
-    fn connect(
-        &mut self,
-        _conf: &WATERConfig,
-    ) -> Result<(), anyhow::Error> {
+    fn connect(&mut self, _conf: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERStream v0 connecting...");
 
         let (caller_io, water_io) = UnixStream::pair()?;

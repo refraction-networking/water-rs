@@ -102,19 +102,14 @@ impl H2O<Host> {
 
                     // if client_type is Listen, then create a listener with the same config
                     match conf.client_type {
-                        WaterBinType::Listen => {
-                            match v0_conf.lock() {
-                                Ok(mut v0_conf) => {
-                                    v0_conf.create_listener()?;
-                                }
-                                Err(e) => {
-                                    return Err(anyhow::anyhow!(
-                                        "Failed to lock v0_conf: {}",
-                                        e
-                                    ))?;
-                                }
+                        WaterBinType::Listen => match v0_conf.lock() {
+                            Ok(mut v0_conf) => {
+                                v0_conf.create_listener()?;
                             }
-                        }
+                            Err(e) => {
+                                return Err(anyhow::anyhow!("Failed to lock v0_conf: {}", e))?;
+                            }
+                        },
                         _ => {}
                     }
                 }

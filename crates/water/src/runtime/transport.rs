@@ -165,10 +165,7 @@ pub trait WATERTransportTrait: Send {
             let mut store = store
                 .lock()
                 .map_err(|e| anyhow::Error::msg(format!("Failed to lock store: {}", e)))?;
-            match core
-                .instance
-                .get_func(&mut *store, conf.entry_fn.as_str())
-            {
+            match core.instance.get_func(&mut *store, conf.entry_fn.as_str()) {
                 Some(func) => func,
                 None => {
                     return Err(anyhow::Error::msg(format!(
@@ -219,5 +216,4 @@ pub trait WATERTransportTrait: Send {
     // ) -> Result<std::thread::JoinHandle<Result<(), anyhow::Error>>, anyhow::Error> {
     //     Err(anyhow::anyhow!("Method not supported"))
     // }
-
 }

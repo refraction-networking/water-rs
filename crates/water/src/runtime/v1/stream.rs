@@ -1,4 +1,4 @@
-use crate::runtime::{stream::WATERStreamTrait, *, transport::WATERTransportTrait};
+use crate::runtime::{stream::WATERStreamTrait, transport::WATERTransportTrait, *};
 
 /// This file contains the WATERStream implementation
 /// which is a TcpStream liked definition with utilizing WASM
@@ -131,10 +131,7 @@ impl WATERTransportTrait for WATERStream<Host> {
 
 impl WATERStreamTrait for WATERStream<Host> {
     /// Connect to the target address with running the WASM connect function
-    fn connect(
-        &mut self,
-        _conf: &WATERConfig,
-    ) -> Result<(), anyhow::Error> {
+    fn connect(&mut self, _conf: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERStream v1_preview connecting...");
 
         let store_lock_result = self.core.store.lock();

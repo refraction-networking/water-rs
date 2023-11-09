@@ -1,10 +1,9 @@
 use crate::runtime::*;
-use stream::WATERStreamTrait;
 use listener::WATERListenerTrait;
+use stream::WATERStreamTrait;
 
 // =================== WATERClient Definition ===================
-pub enum WATERClientType
-{
+pub enum WATERClientType {
     Dialer(Box<dyn WATERStreamTrait>),
     Listener(Box<dyn WATERListenerTrait>),
     Runner(WATERRunner<Host>), // This is a customized runner -- not like any stream
@@ -125,7 +124,7 @@ impl WATERClient {
             WATERClientType::Listener(listener) => {
                 // TODO: clone listener here, since we are doing one WATM instance / accept
                 listener.run_entry_fn(&self.config)
-            },
+            }
             _ => Err(anyhow::anyhow!("This client is not a Runner")),
         }
     }

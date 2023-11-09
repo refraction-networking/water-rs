@@ -1,4 +1,4 @@
-use crate::runtime::{*, listener::WATERListenerTrait, transport::WATERTransportTrait};
+use crate::runtime::{listener::WATERListenerTrait, transport::WATERTransportTrait, *};
 
 pub struct WATERListener<Host> {
     // WASM functions for reading & writing
@@ -123,8 +123,7 @@ impl WATERTransportTrait for WATERListener<Host> {
 
 impl WATERListenerTrait for WATERListener<Host> {
     /// Listening at the addr:port with running the WASM listen function
-    fn accept(&mut self, conf: &WATERConfig)
-            -> Result<(), anyhow::Error> {
+    fn accept(&mut self, conf: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERListener v1_preview listening...");
 
         let store_lock_result = self.core.store.lock();

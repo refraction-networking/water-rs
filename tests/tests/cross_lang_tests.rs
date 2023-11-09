@@ -7,7 +7,8 @@ use tracing::Level;
 use std::{
     fs::File,
     io::{Error, ErrorKind, Read, Write},
-    net::{TcpListener, TcpStream}, vec,
+    net::{TcpListener, TcpStream},
+    vec,
 };
 
 use tempfile::tempdir;
@@ -142,12 +143,12 @@ fn test_cross_lang_wasm_listener() -> Result<(), Box<dyn std::error::Error>> {
 
         assert_eq!(write_bytes, test_message.len());
     });
-    
+
     // remove the parameters later -- no need for accept
     water_client.accept().unwrap();
-    
+
     water_client.cancel_with().unwrap();
-    
+
     let handle_water = water_client.run_worker().unwrap();
 
     std::thread::sleep(std::time::Duration::from_secs(1));
