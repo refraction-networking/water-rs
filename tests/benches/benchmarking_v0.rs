@@ -74,7 +74,7 @@ fn benchmarking_v0_echo() -> Result<(), anyhow::Error> {
             true,
         )?;
         let mut water_client = runtime::client::WATERClient::new(conf)?;
-        water_client.connect("", 0)?;
+        water_client.connect()?;
 
         // let mut water_client = TcpStream::connect(("127.0.0.1", 8088))?;
 

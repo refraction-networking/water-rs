@@ -34,13 +34,13 @@ impl WATERTransportTrait for WATERListener<Host> {
 
 impl WATERListenerTrait for WATERListener<Host> {
     /// Connect to the target address with running the WASM connect function
-    fn listen(&mut self, conf: &WATERConfig) -> Result<(), anyhow::Error> {
+    fn listen(&mut self, _conf: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERListener v0 create listener...");
 
         Ok(())
     }
 
-    fn accept(&mut self, conf: &WATERConfig) -> Result<(), anyhow::Error> {
+    fn accept(&mut self, _conf: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERListener v0 accepting...");
 
         let (caller_io, water_io) = UnixStream::pair()?;

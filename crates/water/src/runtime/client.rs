@@ -143,9 +143,6 @@ impl WATERClient {
             WATERClientType::Listener(listener) => {
                 listener.run_entry_fn(&self.config)?;
             }
-            _ => {
-                return Err(anyhow::anyhow!("This client is not a Runner"));
-            }
         }
         Ok(())
     }

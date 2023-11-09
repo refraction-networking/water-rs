@@ -58,10 +58,10 @@ pub trait WATERTransportTrait: Send {
         unimplemented!("get_core not implemented")
     }
 
-    fn set_caller_io(&mut self, caller_io: Option<UnixStream>) {
+    fn set_caller_io(&mut self, _caller_io: Option<UnixStream>) {
         unimplemented!("set_caller_io not implemented")
     }
-    fn set_cancel_io(&mut self, cancel_io: Option<UnixStream>) {
+    fn set_cancel_io(&mut self, _cancel_io: Option<UnixStream>) {
         unimplemented!("set_cancel_io not implemented")
     }
 

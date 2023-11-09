@@ -1,7 +1,5 @@
 use std::sync::Mutex;
 
-use tracing::Instrument;
-
 use crate::runtime::*;
 
 #[derive(Default, Clone)]
@@ -101,16 +99,15 @@ impl H2O<Host> {
                     v0::funcs::export_defer(&mut linker, Arc::clone(&v0_conf))?;
 
                     // if client_type is Listen, then create a listener with the same config
-                    match conf.client_type {
-                        WaterBinType::Listen => match v0_conf.lock() {
+                    if conf.client_type == WaterBinType::Listen {
+                        match v0_conf.lock() {
                             Ok(mut v0_conf) => {
                                 v0_conf.create_listener()?;
                             }
                             Err(e) => {
                                 return Err(anyhow::anyhow!("Failed to lock v0_conf: {}", e))?;
                             }
-                        },
-                        _ => {}
+                        }
                     }
                 }
                 None => {

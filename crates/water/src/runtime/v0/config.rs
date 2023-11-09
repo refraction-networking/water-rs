@@ -116,7 +116,7 @@ impl V0Config {
         info!("[HOST] WATERCore V0 defer with conn {:?} ...", self.conn);
 
         match &self.conn {
-            V0CRole::Listener(listener) => {
+            V0CRole::Listener(_listener) => {
                 // TODO: Listener shouldn't be deferred, but the stream it connected to should be
                 // let listener = unsafe { std::net::TcpListener::from_raw_fd(*listener) };
                 // drop(listener);
