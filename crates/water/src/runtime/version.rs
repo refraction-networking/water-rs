@@ -4,6 +4,7 @@ use std::str::FromStr;
 use crate::runtime::v0::config::{Config, V0Config};
 use crate::runtime::*;
 
+#[derive(Clone)]
 pub enum Version {
     Unknown,
     V0(Option<V0Config>),

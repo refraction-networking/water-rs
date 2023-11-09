@@ -51,7 +51,7 @@ fn test_echo() -> Result<(), Box<dyn std::error::Error>> {
     .unwrap();
 
     let mut water_client = runtime::client::WATERClient::new(conf).unwrap();
-    water_client.connect("127.0.0.1", 8080).unwrap();
+    water_client.connect().unwrap();
     water_client.write(test_message).unwrap();
 
     let mut buf = vec![0; 32];

@@ -11,7 +11,7 @@ pub fn export_tcp_connect(
             "env",
             "host_dial",
             move |mut caller: Caller<'_, Host>| -> i32 {
-                info!("[WASM] invoking Host exported Dial func connect_tcp...");
+                info!("[WASM] invoking host_dial v0 ...");
 
                 let mut config = config.lock().unwrap();
 
@@ -49,14 +49,14 @@ pub fn export_accept(
             "env",
             "host_accept",
             move |mut caller: Caller<'_, Host>| -> i32 {
-                info!("[WASM] invoking Host exported host_accept func...");
+                info!("[WASM] invoking host_accept v0 ...");
 
                 let mut config = config.lock().unwrap();
 
                 let tcp = config
                     .accept()
                     .map(TcpStream::from_std)
-                    .context("failed to connect to endpoint")
+                    .context("failed to accept")
                     .unwrap();
 
                 // Connecting Tcp
@@ -85,7 +85,7 @@ pub fn export_defer(
 ) -> Result<(), anyhow::Error> {
     linker
         .func_wrap("env", "host_defer", move |_caller: Caller<'_, Host>| {
-            info!("[WASM] invoking Host exported host_defer func...");
+            info!("[WASM] invoking host_defer v0 ...");
 
             let mut config = config.lock().unwrap();
 

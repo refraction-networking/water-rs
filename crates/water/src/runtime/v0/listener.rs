@@ -1,27 +1,16 @@
-use crate::runtime::{stream::WATERStreamTrait, *, transport::WATERTransportTrait};
-// use crate::runtime::{stream::WATERStreamTrait, *, v0::transport::WATERTransportTraitV0, transport::WATERTransportTrait};
+// use crate::runtime::{listener::WATERListenerTrait, v0::transport::WATERTransportTraitV0, *, transport::WATERTransportTrait};
+use crate::runtime::{*, listener::WATERListenerTrait, transport::WATERTransportTrait};
 
-/// This file contains the WATERStream implementation
-/// which is a TcpStream liked definition with utilizing WASM
-
-//           UnixSocket          Connection created with Host
-//    Write =>  u2w  +----------------+  w2n
-//		       ----->|  WATERStream   |------>
-//		Caller       |  WASM Runtime  |  n2w    Destination
-//		       <-----| Decode/Encode  |<------
-//    Read  =>  w2u  +----------------+
-//	                    WATERStream
-
-pub struct WATERStream<Host> {
+pub struct WATERListener<Host> {
     pub caller_io: Option<UnixStream>, // the pipe for communcating between Host and WASM
     pub cancel_io: Option<UnixStream>, // the UnixStream side for communcating between Host and WASM
 
     pub core: H2O<Host>, // core WASM runtime (engine, linker, instance, store, module)
 }
 
-// impl WATERTransportTrait for WATERStream<Host> {}
+// impl WATERTransportTrait for WATERListener<Host> {}
 
-impl WATERTransportTrait for WATERStream<Host> {
+impl WATERTransportTrait for WATERListener<Host> {
     fn get_caller_io(&mut self) -> &mut Option<UnixStream> {
         &mut self.caller_io
     }
@@ -43,13 +32,18 @@ impl WATERTransportTrait for WATERStream<Host> {
     }
 }
 
-impl WATERStreamTrait for WATERStream<Host> {
+impl WATERListenerTrait for WATERListener<Host> {
     /// Connect to the target address with running the WASM connect function
-    fn connect(
-        &mut self,
-        _conf: &WATERConfig,
-    ) -> Result<(), anyhow::Error> {
-        info!("[HOST] WATERStream v0 connecting...");
+    fn listen(&mut self, conf: &WATERConfig)
+            -> Result<(), anyhow::Error> {
+        info!("[HOST] WATERListener v0 create listener...");
+
+        Ok(())
+    }
+
+    fn accept(&mut self, conf: &WATERConfig)
+            -> Result<(), anyhow::Error> {
+        info!("[HOST] WATERListener v0 accepting...");
 
         let (caller_io, water_io) = UnixStream::pair()?;
         self.caller_io = Some(caller_io);
@@ -76,25 +70,25 @@ impl WATERStreamTrait for WATERStream<Host> {
 
         let water_io_fd = ctx.push_file(Box::new(water_io_file), FileAccessMode::all())?;
 
-        let _water_dial = match self.core.instance.get_func(&mut *store, DIAL_FN) {
+        let _water_accept = match self.core.instance.get_func(&mut *store, ACCEPT_FN) {
             Some(func) => func,
             None => {
                 return Err(anyhow::Error::msg(format!(
                     "{} function not found in WASM",
-                    DIAL_FN
+                    ACCEPT_FN
                 )))
             }
         };
 
         // calling the WASM dial function
         let params: Vec<Val> = vec![Val::I32(water_io_fd as i32)];
-        let mut res = vec![Val::I32(0); _water_dial.ty(&*store).results().len()];
-        match _water_dial.call(&mut *store, &params, &mut res) {
+        let mut res = vec![Val::I32(0); _water_accept.ty(&*store).results().len()];
+        match _water_accept.call(&mut *store, &params, &mut res) {
             Ok(_) => {}
             Err(e) => {
                 return Err(anyhow::Error::msg(format!(
                     "{} function failed: {}",
-                    DIAL_FN, e
+                    ACCEPT_FN, e
                 )))
             }
         }
@@ -102,7 +96,7 @@ impl WATERStreamTrait for WATERStream<Host> {
         if res[0].unwrap_i32() < 0 {
             return Err(anyhow::Error::msg(format!(
                 "{} function failed: {}",
-                DIAL_FN, "connection failed"
+                ACCEPT_FN, "connection failed"
             )));
         }
 
@@ -110,11 +104,11 @@ impl WATERStreamTrait for WATERStream<Host> {
     }
 }
 
-impl WATERStream<Host> {
+impl WATERListener<Host> {
     pub fn init(_conf: &WATERConfig, core: H2O<Host>) -> Result<Self, anyhow::Error> {
-        info!("[HOST] WATERStream v0 init...");
+        info!("[HOST] WATERListener v0 init...");
 
-        let runtime = WATERStream {
+        let runtime = WATERListener {
             caller_io: None,
             cancel_io: None,
             core,

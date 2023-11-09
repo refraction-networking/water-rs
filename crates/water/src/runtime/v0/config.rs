@@ -1,4 +1,4 @@
-use std::os::fd::{AsRawFd, FromRawFd};
+use std::os::fd::{AsRawFd, FromRawFd, IntoRawFd};
 
 use anyhow::Context;
 use serde::Deserialize;
@@ -85,22 +85,27 @@ impl V0Config {
         Ok(conn)
     }
 
-    pub fn create_listener(&mut self) -> Result<std::net::TcpListener, anyhow::Error> {
+    pub fn create_listener(&mut self) -> Result<(), anyhow::Error> {
         let addr = format!("{}:{}", self.addr, self.port);
 
         info!("[HOST] WATERCore V0 creating listener on {}", addr);
 
         let listener = std::net::TcpListener::bind(addr)?;
-        self.conn = V0CRole::Listener(listener.as_raw_fd());
-        Ok(listener)
+        self.conn = V0CRole::Listener(listener.into_raw_fd());
+        Ok(())
     }
 
     pub fn accept(&mut self) -> Result<std::net::TcpStream, anyhow::Error> {
+        info!("[HOST] WATERCore V0 accept with conn {:?} ...", self.conn);
+
         match &self.conn {
             V0CRole::Listener(listener) => {
+                info!("accepting listener: {:?}", listener);
                 let listener = unsafe { std::net::TcpListener::from_raw_fd(*listener) };
+                info!("accepting listener: {:?}", listener);
                 let (stream, _) = listener.accept()?;
-                self.conn = V0CRole::Listener(listener.as_raw_fd()); // makde sure it is not closed after scope
+                info!("accepting listener: {:?}", listener);
+                self.conn = V0CRole::Listener(listener.into_raw_fd()); // makde sure it is not closed after scope
                 Ok(stream)
             }
             _ => Err(anyhow::Error::msg("not a listener")),
@@ -108,10 +113,13 @@ impl V0Config {
     }
 
     pub fn defer(&mut self) {
+        info!("[HOST] WATERCore V0 defer with conn {:?} ...", self.conn);
+
         match &self.conn {
             V0CRole::Listener(listener) => {
-                let listener = unsafe { std::net::TcpListener::from_raw_fd(*listener) };
-                drop(listener);
+                // TODO: Listener shouldn't be deferred, but the stream it connected to should be
+                // let listener = unsafe { std::net::TcpListener::from_raw_fd(*listener) };
+                // drop(listener);
             }
             V0CRole::Dialer(conn) => {
                 let conn = unsafe { std::net::TcpStream::from_raw_fd(*conn) };

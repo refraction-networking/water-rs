@@ -9,6 +9,7 @@ pub mod v0;
 pub mod v1;
 pub mod version;
 pub mod version_common;
+pub mod transport;
 
 // =================== STD Imports ===================
 use std::{
@@ -35,12 +36,11 @@ use wasmtime_wasi_threads::WasiThreadsCtx;
 // =================== CURRENT CRATE IMPORTS ===================
 use crate::{
     config::{WATERConfig, WaterBinType},
-    globals::{CANCEL_FN, CONFIG_FN, DIAL_FN, INIT_FN, READER_FN, WATER_BRIDGING_FN, WRITER_FN},
+    globals::{CANCEL_FN, CONFIG_FN, DIAL_FN, INIT_FN, READER_FN, WATER_BRIDGING_FN, WRITER_FN, ACCEPT_FN},
 };
 
 // =================== MODULES' DEPENDENCIES ===================
 use self::core::{Host, H2O};
-use self::listener::WATERListener;
 use self::net::{ConnectFile, File, ListenFile};
 use self::runner::WATERRunner;
 use self::version::Version;

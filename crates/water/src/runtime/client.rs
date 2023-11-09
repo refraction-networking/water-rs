@@ -1,10 +1,12 @@
 use crate::runtime::*;
 use stream::WATERStreamTrait;
+use listener::WATERListenerTrait;
 
 // =================== WATERClient Definition ===================
-pub enum WATERClientType {
+pub enum WATERClientType
+{
     Dialer(Box<dyn WATERStreamTrait>),
-    Listener(WATERListener<Host>),
+    Listener(Box<dyn WATERListenerTrait>),
     Runner(WATERRunner<Host>), // This is a customized runner -- not like any stream
 }
 
@@ -38,8 +40,17 @@ impl WATERClient {
                 WATERClientType::Dialer(stream)
             }
             WaterBinType::Listen => {
-                let stream = WATERListener::init(&conf, core)?;
-                WATERClientType::Listener(stream)
+                let listener = match core.version {
+                    Version::V0(_) => Box::new(v0::listener::WATERListener::init(&conf, core)?)
+                        as Box<dyn WATERListenerTrait>,
+                    Version::V1 => Box::new(v1::listener::WATERListener::init(&conf, core)?)
+                        as Box<dyn WATERListenerTrait>,
+                    _ => {
+                        return Err(anyhow::anyhow!("Invalid version"));
+                    }
+                };
+
+                WATERClientType::Listener(listener)
             }
             WaterBinType::Runner => {
                 let runner = WATERRunner::init(&conf, core)?;
@@ -61,12 +72,12 @@ impl WATERClient {
         self.debug = debug;
     }
 
-    pub fn connect(&mut self, addr: &str, port: u16) -> Result<(), anyhow::Error> {
+    pub fn connect(&mut self) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERClient connecting ...");
 
         match &mut self.stream {
             WATERClientType::Dialer(dialer) => {
-                dialer.connect(&self.config, addr, port)?;
+                dialer.connect(&self.config)?;
             }
             _ => {
                 return Err(anyhow::anyhow!("[HOST] This client is not a Dialer"));
@@ -75,12 +86,26 @@ impl WATERClient {
         Ok(())
     }
 
-    pub fn listen(&mut self, addr: &str, port: u16) -> Result<(), anyhow::Error> {
+    pub fn listen(&mut self) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERClient listening ...");
 
         match &mut self.stream {
             WATERClientType::Listener(listener) => {
-                listener.listen(&self.config, addr, port)?;
+                listener.listen(&self.config)?;
+            }
+            _ => {
+                return Err(anyhow::anyhow!("[HOST] This client is not a Listener"));
+            }
+        }
+        Ok(())
+    }
+
+    pub fn accept(&mut self) -> Result<(), anyhow::Error> {
+        info!("[HOST] WATERClient accepting ...");
+
+        match &mut self.stream {
+            WATERClientType::Listener(listener) => {
+                listener.accept(&self.config)?;
             }
             _ => {
                 return Err(anyhow::anyhow!("[HOST] This client is not a Listener"));
@@ -97,6 +122,10 @@ impl WATERClient {
 
         match &mut self.stream {
             WATERClientType::Dialer(dialer) => dialer.run_entry_fn(&self.config),
+            WATERClientType::Listener(listener) => {
+                // TODO: clone listener here, since we are doing one WATM instance / accept
+                listener.run_entry_fn(&self.config)
+            },
             _ => Err(anyhow::anyhow!("This client is not a Runner")),
         }
     }
@@ -111,6 +140,9 @@ impl WATERClient {
             }
             WATERClientType::Dialer(dialer) => {
                 dialer.run_entry_fn(&self.config)?;
+            }
+            WATERClientType::Listener(listener) => {
+                listener.run_entry_fn(&self.config)?;
             }
             _ => {
                 return Err(anyhow::anyhow!("This client is not a Runner"));
@@ -127,6 +159,9 @@ impl WATERClient {
             WATERClientType::Dialer(dialer) => {
                 dialer.cancel_with(&self.config)?;
             }
+            WATERClientType::Listener(listener) => {
+                listener.cancel_with(&self.config)?;
+            }
             _ => {
                 // for now this is only implemented for v0 dialer
                 return Err(anyhow::anyhow!("This client is not a v0 Dialer"));
@@ -142,6 +177,9 @@ impl WATERClient {
         match &mut self.stream {
             WATERClientType::Dialer(dialer) => {
                 dialer.cancel(&self.config)?;
+            }
+            WATERClientType::Listener(listener) => {
+                listener.cancel(&self.config)?;
             }
             _ => {
                 // for now this is only implemented for v0 dialer

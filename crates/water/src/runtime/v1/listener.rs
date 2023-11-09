@@ -1,17 +1,6 @@
-use crate::runtime::{stream::WATERStreamTrait, *, transport::WATERTransportTrait};
+use crate::runtime::{*, listener::WATERListenerTrait, transport::WATERTransportTrait};
 
-/// This file contains the WATERStream implementation
-/// which is a TcpStream liked definition with utilizing WASM
-
-//           UnixSocket          Connection created with Host
-//    Write =>  u2w  +----------------+  w2n
-//		       ----->|  WATERStream   |------>
-//		Caller       |  WASM Runtime  |  n2w    Destination
-//		       <-----| Decode/Encode  |<------
-//    Read  =>  w2u  +----------------+
-//	                    WATERStream
-
-pub struct WATERStream<Host> {
+pub struct WATERListener<Host> {
     // WASM functions for reading & writing
 
     // the reader in WASM (read from net -- n2w)
@@ -22,15 +11,16 @@ pub struct WATERStream<Host> {
     // returns the number of bytes written
     pub writer: Func,
 
-    pub caller_io: UnixStream, // the pipe for communcating between Host and WASM
+    pub caller_reader: UnixStream, // the reader in Caller (read from WASM -- w2u)
+    pub caller_writer: UnixStream, // the writer in Caller (write to WASM -- u2w)
 
     pub core: H2O<Host>, // core WASM runtime (engine, linker, instance, store, module)
 }
 
-impl WATERTransportTrait for WATERStream<Host> {
+impl WATERTransportTrait for WATERListener<Host> {
     /// Read from the target address
     fn read(&mut self, buf: &mut Vec<u8>) -> Result<i64, anyhow::Error> {
-        debug!("[HOST] WATERStream v1_preview reading...");
+        info!("[HOST] WATERListener v1_preview reading...");
 
         let store_lock_result = self.core.store.lock();
 
@@ -62,7 +52,7 @@ impl WATERTransportTrait for WATERStream<Host> {
 
         // read from WASM's caller_reader
         buf.resize(nums as usize, 0);
-        match self.caller_io.read(&mut buf[..]) {
+        match self.caller_reader.read(&mut buf[..]) {
             Ok(_) => {}
             Err(e) => {
                 return Err(anyhow::Error::msg(format!(
@@ -77,17 +67,10 @@ impl WATERTransportTrait for WATERStream<Host> {
 
     /// Write to the target address
     fn write(&mut self, buf: &[u8]) -> Result<(), anyhow::Error> {
-        debug!("[HOST] WATERStream v1_preview writing...");
-
-        let store_lock_result = self.core.store.lock();
-
-        let mut store = match store_lock_result {
-            Ok(store) => store,
-            Err(e) => return Err(anyhow::Error::msg(format!("Failed to lock store: {}", e))),
-        };
+        info!("[HOST] WATERListener v1_preview writing...");
 
         // write to WASM's caller_writer
-        match self.caller_io.write_all(buf) {
+        match self.caller_writer.write_all(buf) {
             Ok(_) => {}
             Err(e) => {
                 return Err(anyhow::Error::msg(format!(
@@ -96,6 +79,13 @@ impl WATERTransportTrait for WATERStream<Host> {
                 )))
             }
         }
+
+        let store_lock_result = self.core.store.lock();
+
+        let mut store = match store_lock_result {
+            Ok(store) => store,
+            Err(e) => return Err(anyhow::Error::msg(format!("Failed to lock store: {}", e))),
+        };
 
         let params = vec![Val::I64(buf.len() as i64)];
         let mut res = vec![Val::I64(0)];
@@ -129,13 +119,13 @@ impl WATERTransportTrait for WATERStream<Host> {
     }
 }
 
-impl WATERStreamTrait for WATERStream<Host> {
-    /// Connect to the target address with running the WASM connect function
-    fn connect(
-        &mut self,
-        _conf: &WATERConfig,
-    ) -> Result<(), anyhow::Error> {
-        info!("[HOST] WATERStream v1_preview connecting...");
+// impl WATERTransportTraitV1 for WATERListener<Host> {}
+
+impl WATERListenerTrait for WATERListener<Host> {
+    /// Listening at the addr:port with running the WASM listen function
+    fn accept(&mut self, conf: &WATERConfig)
+            -> Result<(), anyhow::Error> {
+        info!("[HOST] WATERListener v1_preview listening...");
 
         let store_lock_result = self.core.store.lock();
 
@@ -144,15 +134,12 @@ impl WATERStreamTrait for WATERStream<Host> {
             Err(e) => return Err(anyhow::Error::msg(format!("Failed to lock store: {}", e))),
         };
 
-        let fnc = match self.core.instance.get_func(&mut *store, DIAL_FN) {
-            Some(func) => func,
-            None => {
-                return Err(anyhow::Error::msg(format!(
-                    "{} function not found in WASM",
-                    DIAL_FN
-                )))
-            }
-        };
+        // TODO: add addr:port sharing with WASM, for now WASM is using config.json's remote_addr:port
+        let fnc = self
+            .core
+            .instance
+            .get_func(&mut *store, &conf.entry_fn)
+            .context(format!("Failed to get function {}", &conf.entry_fn))?;
 
         match fnc.call(&mut *store, &[], &mut []) {
             Ok(_) => {}
@@ -168,19 +155,24 @@ impl WATERStreamTrait for WATERStream<Host> {
     }
 }
 
-impl WATERStream<Host> {
+impl WATERListener<Host> {
     pub fn init(_conf: &WATERConfig, core: H2O<Host>) -> Result<Self, anyhow::Error> {
-        info!("[HOST] WATERStream v1_preview...");
+        info!("[HOST] WATERListener v1_preview init...");
 
-        // constructing a pair of UnixStream for communicating between WASM and Host
-        let (caller_io, water_io) = UnixStream::pair()?;
+        // constructing 2 pairs of UnixStream for communicating between WASM and Host
+        // returns (read_end, write_end) for caller
+        let (caller_reader, water_writer) = UnixStream::pair()?;
+        let (water_reader, caller_writer) = UnixStream::pair()?;
 
-        let water_io_file = unsafe { cap_std::fs::File::from_raw_fd(water_io.as_raw_fd()) };
+        let water_write_file = unsafe { cap_std::fs::File::from_raw_fd(water_writer.as_raw_fd()) };
+        let water_read_file = unsafe { cap_std::fs::File::from_raw_fd(water_reader.as_raw_fd()) };
 
         // insert file here
-        let water_io_file = wasmtime_wasi::sync::file::File::from_cap_std(water_io_file);
+        let wasi_water_reader = wasmtime_wasi::sync::file::File::from_cap_std(water_read_file);
+        let wasi_water_writer = wasmtime_wasi::sync::file::File::from_cap_std(water_write_file);
 
-        std::mem::forget(water_io); // forget the water_io, so that it won't be closed
+        std::mem::forget(water_writer);
+        std::mem::forget(water_reader);
 
         let reader;
         let writer;
@@ -190,13 +182,15 @@ impl WATERStream<Host> {
                 .store
                 .lock()
                 .map_err(|e| anyhow::Error::msg(format!("Failed to lock store: {}", e)))?;
-
             let ctx = store
                 .data_mut()
                 .preview1_ctx
                 .as_mut()
-                .context("Failed to retrieve preview1_ctx from Host")?;
-            let water_io_fd = ctx.push_file(Box::new(water_io_file), FileAccessMode::all())?;
+                .ok_or(anyhow::anyhow!("preview1_ctx in Store is None"))?;
+            let water_reader_fd =
+                ctx.push_file(Box::new(wasi_water_reader), FileAccessMode::all())?;
+            let water_writer_fd =
+                ctx.push_file(Box::new(wasi_water_writer), FileAccessMode::all())?;
 
             let water_bridging = match core.instance.get_func(&mut *store, WATER_BRIDGING_FN) {
                 Some(func) => func,
@@ -208,7 +202,10 @@ impl WATERStream<Host> {
                 }
             };
 
-            let params: Vec<Val> = vec![Val::I32(water_io_fd as i32)];
+            let params = vec![
+                Val::I32(water_reader_fd as i32),
+                Val::I32(water_writer_fd as i32),
+            ];
             match water_bridging.call(&mut *store, &params, &mut []) {
                 Ok(_) => {}
                 Err(e) => {
@@ -241,11 +238,12 @@ impl WATERStream<Host> {
             };
         }
 
-        let runtime = WATERStream {
+        let runtime = WATERListener {
             reader,
             writer,
 
-            caller_io,
+            caller_reader,
+            caller_writer,
 
             core,
         };
