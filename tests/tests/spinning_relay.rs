@@ -19,9 +19,9 @@ fn test_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
     let cfg_str = r#"
 	{
 		"remote_address": "127.0.0.1",
-		"remote_port": 8090,
+		"remote_port": 8088,
 		"local_address": "127.0.0.1",
-		"local_port": 8084
+		"local_port": 8080
 	}
 	"#;
     // Create a directory inside of `std::env::temp_dir()`.
@@ -34,7 +34,7 @@ fn test_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
 
     // starting the listener in another thread it to relay to
     let handle_remote = std::thread::spawn(|| {
-        let listener = TcpListener::bind(("127.0.0.1", 8090)).unwrap();
+        let listener = TcpListener::bind(("127.0.0.1", 8088)).unwrap();
         let (mut socket, _) = listener.accept().unwrap();
         let mut buf = [0; 1024];
         let res = socket.read(&mut buf);
@@ -72,7 +72,7 @@ fn test_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
     let handle_local = std::thread::spawn(|| {
         // give some time let the listener start to accept
         std::thread::sleep(std::time::Duration::from_secs(1));
-        let mut stream = TcpStream::connect(("127.0.0.1", 8084)).unwrap();
+        let mut stream = TcpStream::connect(("127.0.0.1", 8080)).unwrap();
 
         let res = stream.write(test_message);
         assert!(res.is_ok());
@@ -132,24 +132,6 @@ fn spin_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
     let mut file = File::create(&file_path)?;
     writeln!(file, "{}", cfg_str)?;
 
-    let _test_message = b"hello";
-
-    // // starting the listener in another thread it to relay to
-    // let handle_remote = std::thread::spawn(|| {
-    //     let listener = TcpListener::bind(("127.0.0.1", 8090)).unwrap();
-    //     let (mut socket, _) = listener.accept().unwrap();
-    //     let mut buf = [0; 1024];
-    //     let res = socket.read(&mut buf);
-
-    //     assert!(res.is_ok());
-    //     let read_bytes = res.unwrap();
-    //     assert_eq!(read_bytes, test_message.len());
-
-    //     let res = socket.write(&buf[..read_bytes]);
-    //     assert!(res.is_ok());
-    //     assert_eq!(res.unwrap(), test_message.len());
-    // });
-
     let conf = config::WATERConfig::init(
         // plain.wasm is in v0 and fully compatible with the Go engine
         // More details for the Go-side of running plain.wasm check here:
@@ -170,24 +152,6 @@ fn spin_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
 
     water_client.relay().unwrap();
 
-    // // connects to the relay, and the relay will connect to the listener
-    // let handle_local = std::thread::spawn(|| {
-    //     // give some time let the listener start to accept
-    //     std::thread::sleep(std::time::Duration::from_secs(3));
-    //     let mut stream = TcpStream::connect(("127.0.0.1", 8084)).unwrap();
-
-    //     let res = stream.write(test_message);
-    //     assert!(res.is_ok());
-    //     let write_bytes = res.unwrap();
-    //     assert_eq!(write_bytes, test_message.len());
-
-    //     let mut buf = [0; 1024];
-    //     let res = stream.read(&mut buf);
-    //     assert!(res.is_ok());
-    //     let read_bytes = res.unwrap();
-    //     assert_eq!(read_bytes, test_message.len());
-    // });
-
     water_client.associate().unwrap();
     water_client.cancel_with().unwrap();
 
@@ -199,8 +163,6 @@ fn spin_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
 
     drop(file);
     dir.close()?;
-    // handle_remote.join().unwrap();
-    // handle_local.join().unwrap();
     match handle_water.join().unwrap() {
         Ok(_) => {}
         Err(e) => {
