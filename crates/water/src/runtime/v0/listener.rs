@@ -36,8 +36,8 @@ impl WATERListenerTrait for WATERListener<Host> {
     fn listen(&mut self, _conf: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERListener v0 create listener...");
 
-        match &mut self.core.version {
-            Version::V0(v0_conf) => match v0_conf {
+        if let Version::V0(v0_conf) = &mut self.core.version {
+            match v0_conf {
                 Some(v0_conf) => match v0_conf.lock() {
                     Ok(mut v0_conf) => {
                         v0_conf.create_listener(false)?;
@@ -49,8 +49,7 @@ impl WATERListenerTrait for WATERListener<Host> {
                 None => {
                     return Err(anyhow::anyhow!("v0_conf is None"))?;
                 }
-            },
-            _ => {}
+            }
         }
 
         Ok(())

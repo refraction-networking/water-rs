@@ -93,20 +93,18 @@ impl V0Config {
         info!("[HOST] WATERCore V0 connecting to {}", addr);
 
         match &mut self.conn {
-            V0CRole::Relay(lis, ref mut conn_fd) => {
+            V0CRole::Relay(_lis, ref mut conn_fd) => {
                 // now relay has been built, need to dial
                 let conn = std::net::TcpStream::connect(addr)?;
                 *conn_fd = conn.as_raw_fd();
-                return Ok(conn);
+                Ok(conn)
             }
             V0CRole::Unknown => {
                 let conn = std::net::TcpStream::connect(addr)?;
                 self.conn = V0CRole::Dialer(conn.as_raw_fd());
-                return Ok(conn);
+                Ok(conn)
             }
-            _ => {
-                return Err(anyhow::Error::msg("not a dialer"));
-            }
+            _ => Err(anyhow::Error::msg("not a dialer")),
         }
     }
 
@@ -158,7 +156,7 @@ impl V0Config {
                 let conn = unsafe { std::net::TcpStream::from_raw_fd(*conn) };
                 drop(conn);
             }
-            V0CRole::Relay(listener, conn) => {
+            V0CRole::Relay(_listener, conn) => {
                 // Listener shouldn't be deferred, like the above reason
                 // let listener = unsafe { std::net::TcpListener::from_raw_fd(*listener) };
                 // drop(listener);

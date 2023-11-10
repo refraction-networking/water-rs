@@ -94,9 +94,9 @@ impl H2O<Host> {
             Some(Version::V0(ref config)) => match config {
                 Some(v0_conf) => {
                     // let v0_conf = Arc::new(Mutex::new(v0_conf.clone()));
-                    v0::funcs::export_tcp_connect(&mut linker, Arc::clone(&v0_conf))?;
-                    v0::funcs::export_accept(&mut linker, Arc::clone(&v0_conf))?;
-                    v0::funcs::export_defer(&mut linker, Arc::clone(&v0_conf))?;
+                    v0::funcs::export_tcp_connect(&mut linker, Arc::clone(v0_conf))?;
+                    v0::funcs::export_accept(&mut linker, Arc::clone(v0_conf))?;
+                    v0::funcs::export_defer(&mut linker, Arc::clone(v0_conf))?;
 
                     // // if client_type is Listen, then create a listener with the same config
                     // if conf.client_type == WaterBinType::Listen {
