@@ -1,11 +1,13 @@
 use crate::runtime::*;
 use listener::WATERListenerTrait;
+use relay::WATERRelayTrait;
 use stream::WATERStreamTrait;
 
 // =================== WATERClient Definition ===================
 pub enum WATERClientType {
     Dialer(Box<dyn WATERStreamTrait>),
     Listener(Box<dyn WATERListenerTrait>),
+    Relay(Box<dyn WATERRelayTrait>),
     Runner(WATERRunner<Host>), // This is a customized runner -- not like any stream
 }
 
@@ -50,6 +52,18 @@ impl WATERClient {
                 };
 
                 WATERClientType::Listener(listener)
+            }
+            WaterBinType::Relay => {
+                // host managed relay is only implemented for v0
+                let relay = match core.version {
+                    Version::V0(_) => Box::new(v0::relay::WATERRelay::init(&conf, core)?)
+                        as Box<dyn WATERRelayTrait>,
+                    _ => {
+                        return Err(anyhow::anyhow!("Invalid version"));
+                    }
+                };
+
+                WATERClientType::Relay(relay)
             }
             WaterBinType::Runner => {
                 let runner = WATERRunner::init(&conf, core)?;
@@ -99,6 +113,34 @@ impl WATERClient {
         Ok(())
     }
 
+    pub fn relay(&mut self) -> Result<(), anyhow::Error> {
+        info!("[HOST] WATERClient relaying ...");
+
+        match &mut self.stream {
+            WATERClientType::Relay(relay) => {
+                relay.relay(&self.config)?;
+            }
+            _ => {
+                return Err(anyhow::anyhow!("[HOST] This client is not a Relay"));
+            }
+        }
+        Ok(())
+    }
+
+    pub fn associate(&mut self) -> Result<(), anyhow::Error> {
+        info!("[HOST] WATERClient relaying ...");
+
+        match &mut self.stream {
+            WATERClientType::Relay(relay) => {
+                relay.associate(&self.config)?;
+            }
+            _ => {
+                return Err(anyhow::anyhow!("[HOST] This client is not a Relay"));
+            }
+        }
+        Ok(())
+    }
+
     pub fn accept(&mut self) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERClient accepting ...");
 
@@ -125,6 +167,7 @@ impl WATERClient {
                 // TODO: clone listener here, since we are doing one WATM instance / accept
                 listener.run_entry_fn(&self.config)
             }
+            WATERClientType::Relay(relay) => relay.run_entry_fn(&self.config),
             _ => Err(anyhow::anyhow!("This client is not a Runner")),
         }
     }
@@ -143,6 +186,9 @@ impl WATERClient {
             WATERClientType::Listener(listener) => {
                 listener.run_entry_fn(&self.config)?;
             }
+            WATERClientType::Relay(relay) => {
+                relay.run_entry_fn(&self.config)?;
+            }
         }
         Ok(())
     }
@@ -158,9 +204,12 @@ impl WATERClient {
             WATERClientType::Listener(listener) => {
                 listener.cancel_with(&self.config)?;
             }
+            WATERClientType::Relay(relay) => {
+                relay.cancel_with(&self.config)?;
+            }
             _ => {
                 // for now this is only implemented for v0 dialer
-                return Err(anyhow::anyhow!("This client is not a v0 Dialer"));
+                return Err(anyhow::anyhow!("This client is not a v0 supported client"));
             }
         }
         Ok(())
@@ -176,6 +225,9 @@ impl WATERClient {
             }
             WATERClientType::Listener(listener) => {
                 listener.cancel(&self.config)?;
+            }
+            WATERClientType::Relay(relay) => {
+                relay.cancel(&self.config)?;
             }
             _ => {
                 // for now this is only implemented for v0 dialer

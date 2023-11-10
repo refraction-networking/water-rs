@@ -12,6 +12,7 @@ pub const READER_FN: &str = "_water_read";
 pub const WRITER_FN: &str = "_water_write";
 pub const ACCEPT_FN: &str = "_water_accept";
 pub const DIAL_FN: &str = "_water_dial";
+pub const ASSOCIATE_FN: &str = "_water_associate";
 pub const CANCEL_FN: &str = "_water_cancel_with";
 
 pub const RUNTIME_VERSION_MAJOR: i32 = 0x001aaaaa;

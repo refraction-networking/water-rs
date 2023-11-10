@@ -1,5 +1,6 @@
 use std::fmt;
 use std::str::FromStr;
+use std::sync::Mutex;
 
 use crate::runtime::v0::config::{Config, V0Config};
 use crate::runtime::*;
@@ -7,7 +8,7 @@ use crate::runtime::*;
 #[derive(Clone)]
 pub enum Version {
     Unknown,
-    V0(Option<V0Config>),
+    V0(Option<Arc<Mutex<V0Config>>>),
     V1,
     V2,
 }
@@ -30,18 +31,32 @@ impl Version {
             WaterBinType::Dial => {
                 let v0_conf = V0Config::init(
                     "CONNECT".into(),
+                    wasm_config.local_address.clone(),
+                    wasm_config.local_port,
                     wasm_config.remote_address.clone(),
                     wasm_config.remote_port,
                 )?;
-                Version::V0(Some(v0_conf))
+                Version::V0(Some(Arc::new(Mutex::new(v0_conf))))
             }
             WaterBinType::Listen => {
                 let v0_conf = V0Config::init(
                     "LISTEN".into(),
                     wasm_config.local_address.clone(),
                     wasm_config.local_port,
+                    wasm_config.remote_address.clone(),
+                    wasm_config.remote_port,
                 )?;
-                Version::V0(Some(v0_conf))
+                Version::V0(Some(Arc::new(Mutex::new(v0_conf))))
+            }
+            WaterBinType::Relay => {
+                let v0_conf = V0Config::init(
+                    "RELAY".into(),
+                    wasm_config.local_address.clone(),
+                    wasm_config.local_port,
+                    wasm_config.remote_address.clone(),
+                    wasm_config.remote_port,
+                )?;
+                Version::V0(Some(Arc::new(Mutex::new(v0_conf))))
             }
             WaterBinType::Unknown => {
                 Version::Unknown // WATER is setting up?

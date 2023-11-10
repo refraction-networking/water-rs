@@ -52,6 +52,7 @@ pub enum V0CRole {
     Unknown,
     Dialer(i32),
     Listener(i32),
+    Relay(i32, i32), // listener_fd, dialer_fd
 }
 
 // V0 specific configurations
@@ -59,39 +60,68 @@ pub enum V0CRole {
 #[derive(Debug, Clone)]
 pub struct V0Config {
     pub name: String,
-    pub addr: String,
-    pub port: u32,
+    pub loc_addr: String,
+    pub loc_port: u32,
+
+    pub remote_addr: String,
+    pub remote_port: u32,
 
     pub conn: V0CRole,
 }
 
 impl V0Config {
-    pub fn init(name: String, addr: String, port: u32) -> Result<Self, anyhow::Error> {
+    pub fn init(
+        name: String,
+        loc_addr: String,
+        loc_port: u32,
+        remote_addr: String,
+        remote_port: u32,
+    ) -> Result<Self, anyhow::Error> {
         Ok(V0Config {
             name,
-            addr,
-            port,
+            loc_addr,
+            loc_port,
+            remote_addr,
+            remote_port,
             conn: V0CRole::Unknown,
         })
     }
 
     pub fn connect(&mut self) -> Result<std::net::TcpStream, anyhow::Error> {
-        let addr = format!("{}:{}", self.addr, self.port);
+        let addr = format!("{}:{}", self.remote_addr, self.remote_port);
 
         info!("[HOST] WATERCore V0 connecting to {}", addr);
 
-        let conn = std::net::TcpStream::connect(addr)?;
-        self.conn = V0CRole::Dialer(conn.as_raw_fd());
-        Ok(conn)
+        match &mut self.conn {
+            V0CRole::Relay(lis, ref mut conn_fd) => {
+                // now relay has been built, need to dial
+                let conn = std::net::TcpStream::connect(addr)?;
+                *conn_fd = conn.as_raw_fd();
+                return Ok(conn);
+            }
+            V0CRole::Unknown => {
+                let conn = std::net::TcpStream::connect(addr)?;
+                self.conn = V0CRole::Dialer(conn.as_raw_fd());
+                return Ok(conn);
+            }
+            _ => {
+                return Err(anyhow::Error::msg("not a dialer"));
+            }
+        }
     }
 
-    pub fn create_listener(&mut self) -> Result<(), anyhow::Error> {
-        let addr = format!("{}:{}", self.addr, self.port);
+    pub fn create_listener(&mut self, is_relay: bool) -> Result<(), anyhow::Error> {
+        let addr = format!("{}:{}", self.loc_addr, self.loc_port);
 
         info!("[HOST] WATERCore V0 creating listener on {}", addr);
 
         let listener = std::net::TcpListener::bind(addr)?;
-        self.conn = V0CRole::Listener(listener.into_raw_fd());
+
+        if is_relay {
+            self.conn = V0CRole::Relay(listener.into_raw_fd(), 0);
+        } else {
+            self.conn = V0CRole::Listener(listener.into_raw_fd());
+        }
         Ok(())
     }
 
@@ -100,12 +130,15 @@ impl V0Config {
 
         match &self.conn {
             V0CRole::Listener(listener) => {
-                info!("accepting listener: {:?}", listener);
                 let listener = unsafe { std::net::TcpListener::from_raw_fd(*listener) };
-                info!("accepting listener: {:?}", listener);
                 let (stream, _) = listener.accept()?;
-                info!("accepting listener: {:?}", listener);
                 self.conn = V0CRole::Listener(listener.into_raw_fd()); // makde sure it is not closed after scope
+                Ok(stream)
+            }
+            V0CRole::Relay(listener, _) => {
+                let listener = unsafe { std::net::TcpListener::from_raw_fd(*listener) };
+                let (stream, _) = listener.accept()?;
+                self.conn = V0CRole::Relay(listener.into_raw_fd(), 0); // makde sure it is not closed after scope
                 Ok(stream)
             }
             _ => Err(anyhow::Error::msg("not a listener")),
@@ -122,6 +155,13 @@ impl V0Config {
                 // drop(listener);
             }
             V0CRole::Dialer(conn) => {
+                let conn = unsafe { std::net::TcpStream::from_raw_fd(*conn) };
+                drop(conn);
+            }
+            V0CRole::Relay(listener, conn) => {
+                // Listener shouldn't be deferred, like the above reason
+                // let listener = unsafe { std::net::TcpListener::from_raw_fd(*listener) };
+                // drop(listener);
                 let conn = unsafe { std::net::TcpStream::from_raw_fd(*conn) };
                 drop(conn);
             }

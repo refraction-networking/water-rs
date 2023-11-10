@@ -1,4 +1,3 @@
-// use crate::runtime::{listener::WATERListenerTrait, v0::transport::WATERTransportTraitV0, *, transport::WATERTransportTrait};
 use crate::runtime::{listener::WATERListenerTrait, transport::WATERTransportTrait, *};
 
 pub struct WATERListener<Host> {
@@ -36,6 +35,23 @@ impl WATERListenerTrait for WATERListener<Host> {
     /// Connect to the target address with running the WASM connect function
     fn listen(&mut self, _conf: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERListener v0 create listener...");
+
+        match &mut self.core.version {
+            Version::V0(v0_conf) => match v0_conf {
+                Some(v0_conf) => match v0_conf.lock() {
+                    Ok(mut v0_conf) => {
+                        v0_conf.create_listener(false)?;
+                    }
+                    Err(e) => {
+                        return Err(anyhow::anyhow!("Failed to lock v0_conf: {}", e))?;
+                    }
+                },
+                None => {
+                    return Err(anyhow::anyhow!("v0_conf is None"))?;
+                }
+            },
+            _ => {}
+        }
 
         Ok(())
     }

@@ -3,6 +3,7 @@ pub mod client;
 pub mod core;
 pub mod listener;
 pub mod net;
+pub mod relay;
 pub mod runner;
 pub mod stream;
 pub mod transport;
@@ -37,7 +38,8 @@ use wasmtime_wasi_threads::WasiThreadsCtx;
 use crate::{
     config::{WATERConfig, WaterBinType},
     globals::{
-        ACCEPT_FN, CANCEL_FN, CONFIG_FN, DIAL_FN, INIT_FN, READER_FN, WATER_BRIDGING_FN, WRITER_FN,
+        ACCEPT_FN, ASSOCIATE_FN, CANCEL_FN, CONFIG_FN, DIAL_FN, INIT_FN, READER_FN,
+        WATER_BRIDGING_FN, WRITER_FN,
     },
 };
 
