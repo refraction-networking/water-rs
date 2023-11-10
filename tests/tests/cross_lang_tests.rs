@@ -254,7 +254,7 @@ fn test_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
     let handle_water = water_client.run_worker().unwrap();
 
     // give it a second before cancel to let the connector check correct transfer
-    std::thread::sleep(std::time::Duration::from_secs(1));
+    std::thread::sleep(std::time::Duration::from_secs(2));
 
     water_client.cancel().unwrap();
 

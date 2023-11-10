@@ -6,9 +6,7 @@ use tracing::Level;
 
 use std::{
     fs::File,
-    io::{Error, ErrorKind, Read, Write},
-    net::{TcpListener, TcpStream},
-    vec,
+    io::{Error, ErrorKind, Write},
 };
 
 use tempfile::tempdir;
@@ -31,7 +29,7 @@ fn test_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
     let mut file = File::create(&file_path)?;
     writeln!(file, "{}", cfg_str)?;
 
-    let test_message = b"hello";
+    let _test_message = b"hello";
 
     // // starting the listener in another thread it to relay to
     // let handle_remote = std::thread::spawn(|| {
