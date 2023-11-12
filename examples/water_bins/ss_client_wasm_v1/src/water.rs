@@ -60,11 +60,19 @@ pub fn _process_config(fd: i32) {
 /// WASM Entry point here
 #[export_name = "v1_listen"]
 fn client_start() {
-    _start_listen().unwrap();
+    let global_dialer = match DIALER.lock() {
+        Ok(dialer) => dialer,
+        Err(e) => {
+            eprintln!("[WASM] > ERROR: {}", e);
+            return;
+        }
+    };
+
+    _start_listen(global_dialer.config.bypass).unwrap();
 }
 
 #[tokio::main(flavor = "current_thread")]
-async fn _start_listen() -> std::io::Result<()> {
+async fn _start_listen(bypass: bool) -> std::io::Result<()> {
     let fd = _listener_creation().unwrap();
 
     // Set up pre-established listening socket.
@@ -73,19 +81,6 @@ async fn _start_listen() -> std::io::Result<()> {
 
     // Convert to tokio TcpListener.
     let listener = TcpListener::from_std(standard)?;
-
-    let global_dialer = match DIALER.lock() {
-        Ok(dialer) => dialer,
-        Err(e) => {
-            eprintln!("[WASM] > ERROR: {}", e);
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "failed to lock dialer",
-            ));
-        }
-    };
-
-    let bypass = global_dialer.config.bypass;
 
     info!("[WASM] Starting to listen...");
 
@@ -126,7 +121,7 @@ async fn _handle_connection(stream: TcpStream, bypass: bool) -> std::io::Result<
     } else {
         _connect(target_addr, &mut inbound_con).await?;
     }
-    
+
     Ok(())
 }
 
@@ -166,7 +161,10 @@ async fn _connect(target_addr: Address, inbound_con: &mut Socks5Handler) -> std:
     Ok(())
 }
 
-async fn _connect_bypass(target_addr: &Address, inbound_con: &mut Socks5Handler) -> std::io::Result<()> {
+async fn _connect_bypass(
+    target_addr: &Address,
+    inbound_con: &mut Socks5Handler,
+) -> std::io::Result<()> {
     let mut target_stream = _dial_remote(target_addr).expect("Failed to dial to SS-Server");
 
     // Constructing the response header
@@ -176,7 +174,9 @@ async fn _connect_bypass(target_addr: &Address, inbound_con: &mut Socks5Handler)
 
     inbound_con.socks5_response(&mut buf).await;
 
-    match establish_tcp_tunnel_bypassed(&mut inbound_con.stream, &mut target_stream, target_addr).await {
+    match establish_tcp_tunnel_bypassed(&mut inbound_con.stream, &mut target_stream, target_addr)
+        .await
+    {
         Ok(()) => {
             info!("tcp tunnel (bypassed) closed");
         }

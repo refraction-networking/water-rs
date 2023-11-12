@@ -241,16 +241,13 @@ where
         Ok((rn, wn)) => {
             info!(
                 "tcp tunnel to {} (bypassed) closed, L2R {} bytes, R2L {} bytes",
-                target_addr,
-                rn,
-                wn
+                target_addr, rn, wn
             );
         }
         Err(err) => {
             info!(
                 "tcp tunnel to {} (bypassed) closed with error: {}",
-                target_addr,
-                err
+                target_addr, err
             );
         }
     }
