@@ -37,16 +37,17 @@ pub fn _process_config(fd: i32) {
                 }
             };
 
-            let mut global_dialer = match DIALER.lock() {
-                Ok(dialer) => dialer,
+            let mut global_conn = match CONN.lock() {
+                Ok(conn) => conn,
                 Err(e) => {
                     eprintln!("[WASM] > ERROR: {}", e);
                     return;
                 }
             };
 
-            // global_dialer.file_conn.config = config.clone();
-            global_dialer.config = config;
+            global_conn.config = config;
+
+            info!("[WASM] > _process_config: {:?}", global_conn.config);
         }
         Err(e) => {
             eprintln!(
@@ -60,15 +61,15 @@ pub fn _process_config(fd: i32) {
 /// WASM Entry point here
 #[export_name = "v1_listen"]
 fn client_start() {
-    let global_dialer = match DIALER.lock() {
-        Ok(dialer) => dialer,
+    let bypass = match CONN.lock() {
+        Ok(conn) => conn.config.bypass,
         Err(e) => {
             eprintln!("[WASM] > ERROR: {}", e);
             return;
         }
     };
 
-    _start_listen(global_dialer.config.bypass).unwrap();
+    _start_listen(bypass).unwrap();
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -189,9 +190,9 @@ async fn _connect_bypass(
 }
 
 pub fn _dial_remote(target: &Address) -> Result<TcpStream, std::io::Error> {
-    // NOTE: dial to target directly
     let mut tcp_dialer = Dialer::new();
 
+    // NOTE: only support ip:port for now, add DNS resolver helper from Host later
     match target {
         Address::SocketAddress(addr) => {
             tcp_dialer.config.remote_address = addr.ip().to_string();
@@ -242,6 +243,11 @@ pub fn _listener_creation() -> Result<i32, std::io::Error> {
             ));
         }
     };
+
+    info!(
+        "[WASM] creating listener at {}:{}",
+        global_conn.config.local_address, global_conn.config.local_port
+    );
 
     // FIXME: hardcoded the filename for now, make it a config later
     let stream = StreamConfigV1::init(

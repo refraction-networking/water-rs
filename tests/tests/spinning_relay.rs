@@ -21,7 +21,8 @@ fn test_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
 		"remote_address": "127.0.0.1",
 		"remote_port": 8088,
 		"local_address": "127.0.0.1",
-		"local_port": 8080
+		"local_port": 8080,
+        "bypass": false
 	}
 	"#;
     // Create a directory inside of `std::env::temp_dir()`.
