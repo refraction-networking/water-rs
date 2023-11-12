@@ -13,7 +13,7 @@ use tempfile::tempdir;
 use std::thread;
 use std::{
     fs::File,
-    io::{Error, ErrorKind, Read, Write},
+    io::{Write},
     net::{IpAddr, SocketAddr, ToSocketAddrs},
     str,
 };
