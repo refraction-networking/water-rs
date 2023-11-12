@@ -7,6 +7,7 @@ pub struct Config {
     pub local_port: u32,
     pub remote_address: String,
     pub remote_port: u32,
+    pub bypass: bool,
 }
 
 impl Default for Config {
@@ -23,6 +24,7 @@ impl Config {
             local_port: 8080,
             remote_address: String::from("example.com"),
             remote_port: 8082,
+            bypass: false,
         }
     }
 }

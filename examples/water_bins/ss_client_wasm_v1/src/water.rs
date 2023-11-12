@@ -74,6 +74,19 @@ async fn _start_listen() -> std::io::Result<()> {
     // Convert to tokio TcpListener.
     let listener = TcpListener::from_std(standard)?;
 
+    let global_dialer = match DIALER.lock() {
+        Ok(dialer) => dialer,
+        Err(e) => {
+            eprintln!("[WASM] > ERROR: {}", e);
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "failed to lock dialer",
+            ));
+        }
+    };
+
+    let bypass = global_dialer.config.bypass;
+
     info!("[WASM] Starting to listen...");
 
     loop {
@@ -89,7 +102,7 @@ async fn _start_listen() -> std::io::Result<()> {
         // Spawn a background task for each new connection.
         tokio::spawn(async move {
             eprintln!("[WASM] > CONNECTED");
-            match _handle_connection(socket).await {
+            match _handle_connection(socket, bypass).await {
                 Ok(()) => eprintln!("[WASM] > DISCONNECTED"),
                 Err(e) => eprintln!("[WASM] > ERROR: {}", e),
             }
@@ -98,7 +111,7 @@ async fn _start_listen() -> std::io::Result<()> {
 }
 
 // SS handle incoming connections
-async fn _handle_connection(stream: TcpStream) -> std::io::Result<()> {
+async fn _handle_connection(stream: TcpStream, bypass: bool) -> std::io::Result<()> {
     let mut inbound_con = Socks5Handler::new(stream);
     inbound_con.socks5_greet().await.expect("Failed to greet");
 
@@ -106,10 +119,22 @@ async fn _handle_connection(stream: TcpStream) -> std::io::Result<()> {
         .socks5_get_target()
         .await
         .expect("Failed to get target address");
-    let server_stream = _dial_server().expect("Failed to dial to SS-Server");
 
+    // if proxied {
+    if bypass {
+        _connect_bypass(&target_addr, &mut inbound_con).await?;
+    } else {
+        _connect(target_addr, &mut inbound_con).await?;
+    }
+    
+    Ok(())
+}
+
+async fn _connect(target_addr: Address, inbound_con: &mut Socks5Handler) -> std::io::Result<()> {
     // FIXME: hardcoded server ip:address for now + only support connection with ip:port
     let server_addr = Address::SocketAddress(SocketAddr::from(([127, 0, 0, 1], 8388)));
+
+    let server_stream = _dial_remote(&server_addr).expect("Failed to dial to SS-Server");
 
     // Constructing the response header
     let mut buf = BytesMut::with_capacity(server_addr.serialized_len());
@@ -141,15 +166,47 @@ async fn _handle_connection(stream: TcpStream) -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn _dial_server() -> Result<TcpStream, std::io::Error> {
-    // NOTE: dial to SS-Server
+async fn _connect_bypass(target_addr: &Address, inbound_con: &mut Socks5Handler) -> std::io::Result<()> {
+    let mut target_stream = _dial_remote(target_addr).expect("Failed to dial to SS-Server");
+
+    // Constructing the response header
+    let mut buf = BytesMut::with_capacity(target_addr.serialized_len());
+    buf.put_slice(&[consts::SOCKS5_VERSION, consts::SOCKS5_REPLY_SUCCEEDED, 0x00]);
+    target_addr.write_to_buf(&mut buf);
+
+    inbound_con.socks5_response(&mut buf).await;
+
+    match establish_tcp_tunnel_bypassed(&mut inbound_con.stream, &mut target_stream, target_addr).await {
+        Ok(()) => {
+            info!("tcp tunnel (bypassed) closed");
+        }
+        Err(err) => {
+            eprintln!("tcp tunnel (proxied) closed with error: {}", err);
+        }
+    }
+
+    Ok(())
+}
+
+pub fn _dial_remote(target: &Address) -> Result<TcpStream, std::io::Error> {
+    // NOTE: dial to target directly
     let mut tcp_dialer = Dialer::new();
 
-    // FIXME: Hardcoded server ip:port for now
-    tcp_dialer.config.remote_address = "127.0.0.1".to_string();
-    tcp_dialer.config.remote_port = 8388;
+    match target {
+        Address::SocketAddress(addr) => {
+            tcp_dialer.config.remote_address = addr.ip().to_string();
+            tcp_dialer.config.remote_port = addr.port() as u32;
+        }
+        _ => {
+            eprintln!("Failed to get target address");
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Failed to get target address",
+            ));
+        }
+    }
 
-    let _tcp_fd = tcp_dialer.dial().expect("Failed to dial");
+    let _tcp_fd: i32 = tcp_dialer.dial().expect("Failed to dial");
 
     let server_stream = match tcp_dialer.file_conn.outbound_conn.file.unwrap() {
         ConnStream::TcpStream(s) => s,
@@ -172,38 +229,6 @@ pub fn _dial_server() -> Result<TcpStream, std::io::Error> {
     info!("[Connected] to SS-Server");
 
     Ok(server_stream)
-}
-
-#[cfg(feature = "direct_connect")]
-pub fn _direct_connect() {
-    // create a new Dialer to dial any target address as it wants to
-    // Add more features later -- connect to target thru rules (direct / server)
-    // Connect to target address directly
-    {
-        let mut tcp_dialer = Dialer::new();
-        tcp_dialer.config.remote_address = addr.ip().to_string();
-        tcp_dialer.config.remote_port = addr.port() as u32;
-
-        let tcp_fd = tcp_dialer.dial().expect("Failed to dial");
-
-        let server_stream = match tcp_dialer.file_conn.outbound_conn.file.unwrap() {
-            ConnStream::TcpStream(s) => s,
-            _ => {
-                eprintln!("Failed to get outbound tcp stream");
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::InvalidInput,
-                    "Failed to get outbound tcp stream",
-                ));
-            }
-        };
-
-        server_stream
-            .set_nonblocking(true)
-            .expect("Failed to set non-blocking");
-
-        let server_stream =
-            TcpStream::from_std(server_stream).expect("Failed to convert to tokio stream");
-    }
 }
 
 pub fn _listener_creation() -> Result<i32, std::io::Error> {

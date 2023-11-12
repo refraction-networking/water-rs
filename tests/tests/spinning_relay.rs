@@ -114,6 +114,7 @@ fn test_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+// A test that do nothing but just spin up the relay for 20 seconds
 // #[test]
 fn spin_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt().with_max_level(Level::INFO).init();
@@ -121,9 +122,10 @@ fn spin_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
     let cfg_str = r#"
 	{
 		"remote_address": "127.0.0.1",
-		"remote_port": 8088,
+		"remote_port": 5201,
 		"local_address": "127.0.0.1",
-		"local_port": 8082
+		"local_port": 8082,
+        "bypass": false
 	}
 	"#;
     // Create a directory inside of `std::env::temp_dir()`.
