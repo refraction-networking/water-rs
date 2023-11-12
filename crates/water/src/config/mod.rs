@@ -5,6 +5,7 @@ pub struct WATERConfig {
     pub entry_fn: String,
     pub config_wasm: String,
     pub client_type: WaterBinType,
+
     pub debug: bool,
 }
 

@@ -1,8 +1,14 @@
 use std::fmt;
 use std::str::FromStr;
+use std::sync::Mutex;
 
+use crate::runtime::v0::config::{Config, V0Config};
+use crate::runtime::*;
+
+#[derive(Clone)]
 pub enum Version {
-    V0,
+    Unknown,
+    V0(Option<Arc<Mutex<V0Config>>>),
     V1,
     V2,
 }
@@ -15,11 +21,60 @@ impl Version {
         }
     }
 
+    // Current API v0 needs some configurations at the beginning
+    pub fn config_v0(&mut self, conf: &WATERConfig) -> Result<Version, anyhow::Error> {
+        info!("[HOST] WATERCore configuring for V0");
+
+        let wasm_config = Config::from(&conf.config_wasm)?;
+
+        let v = match conf.client_type {
+            WaterBinType::Dial => {
+                let v0_conf = V0Config::init(
+                    "CONNECT".into(),
+                    wasm_config.local_address.clone(),
+                    wasm_config.local_port,
+                    wasm_config.remote_address.clone(),
+                    wasm_config.remote_port,
+                )?;
+                Version::V0(Some(Arc::new(Mutex::new(v0_conf))))
+            }
+            WaterBinType::Listen => {
+                let v0_conf = V0Config::init(
+                    "LISTEN".into(),
+                    wasm_config.local_address.clone(),
+                    wasm_config.local_port,
+                    wasm_config.remote_address.clone(),
+                    wasm_config.remote_port,
+                )?;
+                Version::V0(Some(Arc::new(Mutex::new(v0_conf))))
+            }
+            WaterBinType::Relay => {
+                let v0_conf = V0Config::init(
+                    "RELAY".into(),
+                    wasm_config.local_address.clone(),
+                    wasm_config.local_port,
+                    wasm_config.remote_address.clone(),
+                    wasm_config.remote_port,
+                )?;
+                Version::V0(Some(Arc::new(Mutex::new(v0_conf))))
+            }
+            WaterBinType::Unknown => {
+                Version::Unknown // WATER is setting up?
+            }
+            _ => {
+                unimplemented!("This client type is not supported yet")
+            }
+        };
+
+        Ok(v)
+    }
+
     pub fn as_str(&self) -> &'static str {
-        match *self {
-            Version::V0 => "V0",
-            Version::V1 => "V1",
-            Version::V2 => "V2",
+        match self {
+            Version::Unknown => "_water_setting_up",
+            Version::V0(_v0_conf) => "_water_v0",
+            Version::V1 => "_water_v1",
+            Version::V2 => "_water_v2",
         }
     }
 }
@@ -29,9 +84,9 @@ impl FromStr for Version {
 
     fn from_str(s: &str) -> Result<Version, ()> {
         match s {
-            "V0" => Ok(Version::V0),
-            "V1" => Ok(Version::V1),
-            "V2" => Ok(Version::V2),
+            "_water_v0" => Ok(Version::V0(None)),
+            "_water_v1" => Ok(Version::V1),
+            "_water_v2" => Ok(Version::V2),
             _ => Err(()),
         }
     }
@@ -40,9 +95,10 @@ impl FromStr for Version {
 impl From<&Version> for &'static str {
     fn from(v: &Version) -> &'static str {
         match v {
-            Version::V0 => "V0",
-            Version::V1 => "V1",
-            Version::V2 => "V2",
+            Version::Unknown => "_water_setting_up",
+            Version::V0(_v0_conf) => "_water_v0",
+            Version::V1 => "_water_v1",
+            Version::V2 => "_water_v2",
         }
     }
 }
