@@ -21,8 +21,8 @@ The repo contains 2 main components:
 2. A Rust crate [`water-wasm-crate`](https://github.com/erikziyunchi/water-rs/tree/main/crates/wasm) for WATM-development where developers can easily create their own `.wasm`.
 
 Also include examples for demonstration of usage:
-1. A cli tool where can directly load a `.wasm` binary and run it, see [here](https://github.com/erikziyunchi/water-rs/tree/main/examples/clients/cli).
-2. Some WATM examples implemented using our `water-wasm-crate`, see [here](https://github.com/erikziyunchi/water-rs/tree/main/examples/water_bins).
+1. A standalone cli tool which can be used to load a `.wasm` WATM directly and run it. See [water-rs/tree/main/examples/clients/cli](https://github.com/erikziyunchi/water-rs/tree/main/examples/clients/cli).
+2. A few examples WATM implementations with `water-wasm-crate`, see [water-rs/tree/main/examples/water_bins](https://github.com/erikziyunchi/water-rs/tree/main/examples/water_bins).
 3. Examples of using the above WATM examples with our `water` library, see [tests](https://github.com/erikziyunchi/water-rs/tree/main/tests/tests) for usage.
 
 ## Running tests
