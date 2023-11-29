@@ -14,6 +14,12 @@
 
 The Go implementation of the runtime library can be found in [water-go](https://github.com/gaukas/water). 
 
+## Be Water
+
+> Empty your mind, be formless, shapeless, like water. If you put water into a cup, it becomes the cup. You put water into a bottle and it becomes the bottle. You put it in a teapot, it becomes the teapot. Now, water can flow or it can crash. Be water, my friend.
+>
+> -- Bruce Lee
+
 ## Contents
 
 The repo contains 2 main components:
