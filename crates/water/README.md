@@ -6,7 +6,7 @@ For the latest API docs see: [here](https://app.gitbook.com/o/KHlQypYtIQKkb8YeZ6
 
 ## External (Caller Facing)
 
-<figure><img src="docs/images/water_rust_lib_draft1.png" alt=""><figcaption><p>design diagram draft1</p></figcaption></figure>
+<figure><img src="../../.github/assets/water_rust_lib_draft1.png" alt=""><figcaption><p>design diagram draft1</p></figcaption></figure>
 
 #### Sync:
 
