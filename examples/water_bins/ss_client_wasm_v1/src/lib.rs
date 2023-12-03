@@ -24,7 +24,7 @@ use futures::ready;
 use lazy_static::lazy_static;
 use pin_project::pin_project;
 use tokio::{
-    io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, ReadBuf},
+    io::{copy_bidirectional, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, ReadBuf},
     net::{TcpListener, TcpStream},
 };
 use tracing::{debug, info, Level};
@@ -49,7 +49,7 @@ use water_wasm::*;
 use shadowsocks_crypto::{v1::random_iv_or_salt, v1::Cipher, CipherKind};
 
 // Export version info
-#[export_name = "V1"]
+#[export_name = "_water_v1"]
 pub static V1: i32 = 0;
 
 // create a mutable global variable stores a pointer to the config

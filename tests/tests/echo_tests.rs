@@ -15,7 +15,8 @@ fn test_echo() -> Result<(), Box<dyn std::error::Error>> {
 		"remote_address": "127.0.0.1",
 		"remote_port": 8080,
 		"local_address": "127.0.0.1",
-		"local_port": 8088
+		"local_port": 8088,
+        "bypass": false
 	}
 	"#;
     // Create a directory inside of `std::env::temp_dir()`.
@@ -43,15 +44,15 @@ fn test_echo() -> Result<(), Box<dyn std::error::Error>> {
 
     let conf = config::WATERConfig::init(
         String::from("./test_wasm/echo_client.wasm"),
-        String::from("_init"),
+        String::from("_water_init"),
         String::from(file_path.to_string_lossy()),
         config::WaterBinType::Dial,
         true,
     )
     .unwrap();
 
-    let mut water_client = runtime::WATERClient::new(conf).unwrap();
-    water_client.connect("127.0.0.1", 8080).unwrap();
+    let mut water_client = runtime::client::WATERClient::new(conf).unwrap();
+    water_client.connect().unwrap();
     water_client.write(test_message).unwrap();
 
     let mut buf = vec![0; 32];
