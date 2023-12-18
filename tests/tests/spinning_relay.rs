@@ -121,7 +121,7 @@ fn spin_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
     let cfg_str = r#"
 	{
 		"remote_address": "127.0.0.1",
-		"remote_port": 8088,
+		"remote_port": 8888,
 		"local_address": "127.0.0.1",
 		"local_port": 8082
 	}
@@ -155,7 +155,26 @@ fn spin_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
     water_client.associate().unwrap();
     water_client.cancel_with().unwrap();
 
-    let handle_water = water_client.run_worker().unwrap();
+    let mut handle_water = water_client.run_worker().unwrap();
+
+    for i in 0..5 {
+        match handle_water.join().unwrap() {
+            Ok(_) => {}
+            Err(e) => {
+                eprintln!("Running _water_worker ERROR: {}", e);
+                return Err(Box::new(Error::new(
+                    ErrorKind::Other,
+                    "Failed to join _water_worker thread",
+                )));
+            }
+        };
+
+        let mut new_water = water_client.keep_listen().unwrap();
+        // no need to call relay again, since relay() is also creating the listener
+        new_water.associate().unwrap();
+        new_water.cancel_with().unwrap();
+        handle_water = new_water.run_worker().unwrap();
+    }
 
     std::thread::sleep(std::time::Duration::from_secs(20));
 
@@ -163,16 +182,6 @@ fn spin_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
 
     drop(file);
     dir.close()?;
-    match handle_water.join().unwrap() {
-        Ok(_) => {}
-        Err(e) => {
-            eprintln!("Running _water_worker ERROR: {}", e);
-            return Err(Box::new(Error::new(
-                ErrorKind::Other,
-                "Failed to join _water_worker thread",
-            )));
-        }
-    };
 
     Ok(())
 }
