@@ -157,7 +157,7 @@ fn spin_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut handle_water = water_client.run_worker().unwrap();
 
-    for i in 0..5 {
+    for _i in 0..5 {
         match handle_water.join().unwrap() {
             Ok(_) => {}
             Err(e) => {

@@ -68,9 +68,7 @@ impl H2O<Host> {
             return Err(anyhow::Error::msg("WATM module version not found"));
         }
 
-        Ok(Self::create_core(
-            conf, linker, store, module, engine, version,
-        )?)
+        Self::create_core(conf, linker, store, module, engine, version)
     }
 
     pub fn create_core(
@@ -200,14 +198,7 @@ impl H2O<Host> {
         let host = Host::default();
         let store = Store::new(&engine, host);
 
-        Ok(Self::create_core(
-            conf,
-            linker,
-            store,
-            module,
-            engine,
-            Some(version),
-        )?)
+        Self::create_core(conf, linker, store, module, engine, Some(version))
     }
 
     pub fn _prepare(&mut self, conf: &WATERConfig) -> Result<(), anyhow::Error> {
