@@ -297,23 +297,3 @@ fn execute_wasm_shadowsocks_client() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-
-// Here is a test that runs the ss_client that has to be ended with signal
-// #[test]
-fn execute_wasm_shadowsocks_client() {
-    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
-
-    // ==== setup WASM Shadowsocks client ====
-    let conf = config::WATERConfig::init(
-        String::from("./test_wasm/ss_client_wasm.wasm"),
-        String::from("v1_listen"),
-        String::from("./test_data/config.json"),
-        config::WaterBinType::Runner,
-        false,
-    )
-    .unwrap();
-
-    let mut water_client = runtime::client::WATERClient::new(conf).unwrap();
-
-    water_client.execute().unwrap();
-}
