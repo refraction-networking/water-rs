@@ -1,5 +1,6 @@
-# W.A.T.E.R.: WebAssembly Transport Executable Runtime
-[![License](https://img.shields.io/badge/License-Apache_2.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ferikziyunchi%2Fwater-rs.svg?type=shield&issueType=license)](https://app.fossa.com/projects/git%2Bgithub.com%2Ferikziyunchi%2Fwater-rs?ref=badge_shield&issueType=license) [![Build & Test Status](https://github.com/erikziyunchi/WASMable-Transport/actions/workflows/rust.yml/badge.svg?branch=main)](https://github.com/erikziyunchi/WASMable-Transport/actions/workflows/rust.yml)
+# W.A.T.E.R.: WebAssembly Transport Executables Runtime
+![GitHub License](https://img.shields.io/github/license/erikziyunchi/water-rs?label=License)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ferikziyunchi%2Fwater-rs.svg?type=shield&issueType=license)](https://app.fossa.com/projects/git%2Bgithub.com%2Ferikziyunchi%2Fwater-rs?ref=badge_shield&issueType=license) [![Build & Test Status](https://github.com/erikziyunchi/WASMable-Transport/actions/workflows/rust.yml/badge.svg?branch=main)](https://github.com/erikziyunchi/WASMable-Transport/actions/workflows/rust.yml)
 
 <div style="width: 100%; height = 160px">
     <div style="width: 75%; height: 150px; float: left;"> 
@@ -11,17 +12,42 @@
     </div>
 </div>
 
-Information about the Golang Engine can be found in the [water-go](https://github.com/gaukas/water) library, and another [repo](https://github.com/erikziyunchi/wasm_proxy) contains all the other WASM PoC examples has explored.
+The Go implementation of the runtime library can be found in [water-go](https://github.com/gaukas/water). 
+
+### Citation Information
+
+If you quoted or used our work, please cite our paper [Just add WATER: WebAssembly-based Circumvention Transports](https://arxiv.org/pdf/2312.00163.pdf) in your work.
+
+<details>
+  <summary>BibTeX</summary>
+    
+  ```bibtex
+  @misc{chi2023just,
+    title={Just add WATER: WebAssembly-based Circumvention Transports}, 
+    author={Erik Chi and Gaukas Wang and J. Alex Halderman and Eric Wustrow and Jack Wampler},
+    year={2023},
+    eprint={2312.00163},
+    archivePrefix={arXiv},
+    primaryClass={cs.CR}
+  }
+  ```
+</details>
+
+## Be Water
+
+> Empty your mind, be formless, shapeless, like water. If you put water into a cup, it becomes the cup. You put water into a bottle and it becomes the bottle. You put it in a teapot, it becomes the teapot. Now, water can flow or it can crash. Be water, my friend.
+>
+> -- Bruce Lee
 
 ## Contents
 
-The repo contains 2 main parts for the library:
-1. A Rust crate [`water`](https://github.com/erikziyunchi/water-rs/tree/main/crates/water) for Host-development where developers can use to interact with their `.wasm` binary
-2. A Rust crate [`water-wasm-crate`](https://github.com/erikziyunchi/water-rs/tree/main/crates/wasm) for WATM-development where developers can make their own `.wasm` binary easier.
+The repo contains 2 main components:
+1. A Rust crate [`water`](https://github.com/erikziyunchi/water-rs/tree/main/crates/water) runtime library used to interact with `.wasm` WebAssembly Transport Modules(WATM).
+2. A Rust crate [`water-wasm-crate`](https://github.com/erikziyunchi/water-rs/tree/main/crates/wasm) for WATM-development where developers can easily create their own `.wasm`.
 
 Also include examples for demonstration of usage:
-1. A cli tool where can directly load a `.wasm` binary and run it, see [here](https://github.com/erikziyunchi/water-rs/tree/main/examples/clients/cli).
-2. Some WATM examples implemented using our `water-wasm-crate`, see [here](https://github.com/erikziyunchi/water-rs/tree/main/examples/water_bins).
+1. A standalone cli tool which can be used to load a `.wasm` WATM directly and run it. See [water-rs/tree/main/examples/clients/cli](https://github.com/erikziyunchi/water-rs/tree/main/examples/clients/cli).
+2. A few examples WATM implementations with `water-wasm-crate`, see [water-rs/tree/main/examples/water_bins](https://github.com/erikziyunchi/water-rs/tree/main/examples/water_bins).
 3. Examples of using the above WATM examples with our `water` library, see [tests](https://github.com/erikziyunchi/water-rs/tree/main/tests/tests) for usage.
 
 ## Running tests

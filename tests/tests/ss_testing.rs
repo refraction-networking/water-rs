@@ -8,9 +8,13 @@ use water::*;
 
 use tracing::Level;
 
+use tempfile::tempdir;
+
 use std::thread;
 use std::{
-    net::{SocketAddr, ToSocketAddrs},
+    fs::File,
+    io::Write,
+    net::{IpAddr, SocketAddr, ToSocketAddrs},
     str,
 };
 use tokio::{
@@ -113,7 +117,7 @@ impl Socks5TestServer {
 // "#;
 
 #[tokio::test]
-async fn wasm_managed_shadowsocks_async() {
+async fn wasm_managed_shadowsocks_async() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt().with_max_level(Level::INFO).init();
 
     // ==== setup official Shadowsocks server ====
@@ -123,6 +127,21 @@ async fn wasm_managed_shadowsocks_async() {
     const PASSWORD: &str = "Test!23";
     const METHOD: CipherKind = CipherKind::CHACHA20_POLY1305;
 
+    let cfg_str = r#"
+	{
+        "remote_address": "127.0.0.1",
+        "remote_port": 8088,
+        "local_address": "127.0.0.1",
+        "local_port": 8080,
+        "bypass": false
+    }
+	"#;
+    // Create a directory inside of `std::env::temp_dir()`.
+    let dir = tempdir()?;
+    let file_path = dir.path().join("temp-config.txt");
+    let mut file = File::create(&file_path)?;
+    writeln!(file, "{}", cfg_str)?;
+
     let svr = Socks5TestServer::new(SERVER_ADDR, LOCAL_ADDR, PASSWORD, METHOD, false);
     svr.run().await;
 
@@ -130,7 +149,10 @@ async fn wasm_managed_shadowsocks_async() {
     let conf = config::WATERConfig::init(
         String::from("./test_wasm/ss_client_wasm.wasm"),
         String::from("v1_listen"),
-        String::from("./test_data/config.json"),
+        // Currently using a temp file to pass config to WASM client
+        // can be easily configed here -- but can also use config.json
+        String::from(file_path.to_string_lossy()),
+        // String::from("./test_data/config.json"),
         config::WaterBinType::Runner,
         true,
     )
@@ -167,6 +189,113 @@ async fn wasm_managed_shadowsocks_async() {
 
     let http_status = b"HTTP/1.0 200 OK\r\n";
     assert!(buf.starts_with(http_status));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn wasm_managed_shadowsocks_bypass_async() -> Result<(), Box<dyn std::error::Error>> {
+    let cfg_str = r#"
+	{
+		"remote_address": "127.0.0.1",
+		"remote_port": 0,
+		"local_address": "127.0.0.1",
+		"local_port": 8888,
+        "bypass": true
+	}
+	"#;
+    // Create a directory inside of `std::env::temp_dir()`.
+    let dir = tempdir()?;
+    let file_path = dir.path().join("temp-config.txt");
+    let mut file = File::create(&file_path)?;
+    writeln!(file, "{}", cfg_str)?;
+
+    // ==== setup WASM Shadowsocks client ====
+    let conf = config::WATERConfig::init(
+        String::from("./test_wasm/ss_client_wasm.wasm"),
+        String::from("v1_listen"),
+        String::from(file_path.to_string_lossy()),
+        config::WaterBinType::Runner,
+        true,
+    )
+    .unwrap();
+
+    let mut water_client = runtime::client::WATERClient::new(conf).unwrap();
+
+    // ==== spawn a thread to run WASM Shadowsocks client ====
+    thread::spawn(move || {
+        water_client.execute().unwrap();
+    });
+
+    // Give some time for the WASM client to start
+    thread::sleep(Duration::from_millis(1000));
+
+    let wasm_ss_client_addr = SocketAddr::new("127.0.0.1".parse().unwrap(), 8888);
+
+    // ==== test WASM Shadowsocks client ====
+    // currently only support connect by ip,
+    // this is the ip of detectportal.firefox.com
+    let ip: IpAddr = "143.244.220.150".parse().unwrap();
+    let port = 80;
+
+    let mut c = Socks5TcpClient::connect(
+        Address::SocketAddress(SocketAddr::new(ip, port)),
+        wasm_ss_client_addr,
+    )
+    .await
+    .unwrap();
+
+    let req = b"GET /success.txt HTTP/1.0\r\nHost: detectportal.firefox.com\r\nAccept: */*\r\n\r\n";
+    c.write_all(req).await.unwrap();
+    c.flush().await.unwrap();
+
+    let mut r = BufReader::new(c);
+
+    let mut buf = Vec::new();
+    r.read_until(b'\n', &mut buf).await.unwrap();
+
+    let http_status = b"HTTP/1.0 200 OK\r\n";
+    assert!(buf.starts_with(http_status));
+
+    Ok(())
+}
+
+// Here is a test that runs the ss_client that has to be ended with signal
+// #[test]
+fn execute_wasm_shadowsocks_client() -> Result<(), Box<dyn std::error::Error>> {
+    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
+
+    let cfg_str = r#"
+	{
+		"remote_address": "138.197.211.159",
+		"remote_port": 5201,
+		"local_address": "127.0.0.1",
+		"local_port": 8080,
+        "bypass": true
+	}
+	"#;
+
+    // Create a directory inside of `std::env::temp_dir()`.
+    let dir = tempdir()?;
+    let file_path = dir.path().join("temp-config.txt");
+    let mut file = File::create(&file_path)?;
+    writeln!(file, "{}", cfg_str)?;
+
+    // ==== setup WASM Shadowsocks client ====
+    let conf = config::WATERConfig::init(
+        String::from("./test_wasm/ss_client_wasm.wasm"),
+        String::from("v1_listen"),
+        String::from(file_path.to_string_lossy()),
+        config::WaterBinType::Runner,
+        false,
+    )
+    .unwrap();
+
+    let mut water_client = runtime::client::WATERClient::new(conf).unwrap();
+
+    water_client.execute().unwrap();
+
+    Ok(())
 }
 
 // Here is a test that runs the ss_client that has to be ended with signal

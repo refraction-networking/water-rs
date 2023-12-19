@@ -22,7 +22,8 @@ fn test_cross_lang_wasm_dialer() -> Result<(), Box<dyn std::error::Error>> {
 		"remote_address": "127.0.0.1",
 		"remote_port": 8080,
 		"local_address": "127.0.0.1",
-		"local_port": 8088
+		"local_port": 8088,
+        "bypass": false
 	}
 	"#;
     // Create a directory inside of `std::env::temp_dir()`.
@@ -102,7 +103,8 @@ fn test_cross_lang_wasm_listener() -> Result<(), Box<dyn std::error::Error>> {
 		"remote_address": "127.0.0.1",
 		"remote_port": 8088,
 		"local_address": "127.0.0.1",
-		"local_port": 8082
+		"local_port": 8082,
+        "bypass": false
 	}
 	"#;
     // Create a directory inside of `std::env::temp_dir()`.

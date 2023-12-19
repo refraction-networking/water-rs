@@ -15,7 +15,8 @@ fn test_echo() -> Result<(), Box<dyn std::error::Error>> {
 		"remote_address": "127.0.0.1",
 		"remote_port": 8080,
 		"local_address": "127.0.0.1",
-		"local_port": 8088
+		"local_port": 8088,
+        "bypass": false
 	}
 	"#;
     // Create a directory inside of `std::env::temp_dir()`.
