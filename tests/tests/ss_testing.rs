@@ -198,9 +198,9 @@ async fn wasm_managed_shadowsocks_bypass_async() -> Result<(), Box<dyn std::erro
     let cfg_str = r#"
 	{
 		"remote_address": "127.0.0.1",
-		"remote_port": 0,
+		"remote_port": 10085,
 		"local_address": "127.0.0.1",
-		"local_port": 8888,
+		"local_port": 10086,
         "bypass": true
 	}
 	"#;
@@ -230,7 +230,7 @@ async fn wasm_managed_shadowsocks_bypass_async() -> Result<(), Box<dyn std::erro
     // Give some time for the WASM client to start
     thread::sleep(Duration::from_millis(1000));
 
-    let wasm_ss_client_addr = SocketAddr::new("127.0.0.1".parse().unwrap(), 8888);
+    let wasm_ss_client_addr = SocketAddr::new("127.0.0.1".parse().unwrap(), 10086);
 
     // ==== test WASM Shadowsocks client ====
     // currently only support connect by ip,
