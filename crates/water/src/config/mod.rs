@@ -1,8 +1,5 @@
 pub mod wasm_shared_config;
 
-use std::fmt;
-use std::str::FromStr;
-
 /// WATER configuration
 #[derive(Clone)]
 pub struct WATERConfig {
