@@ -225,3 +225,32 @@ where
     }
     .await
 }
+
+pub(crate) async fn establish_tcp_tunnel_bypassed<P, S>(
+    plain: &mut P,
+    shadow: &mut S,
+    target_addr: &Address,
+) -> io::Result<()>
+where
+    P: AsyncRead + AsyncWrite + Unpin,
+    S: AsyncRead + AsyncWrite + Unpin,
+{
+    info!("established tcp tunnel to {} bypassed", target_addr);
+
+    match copy_bidirectional(plain, shadow).await {
+        Ok((rn, wn)) => {
+            info!(
+                "tcp tunnel to {} (bypassed) closed, L2R {} bytes, R2L {} bytes",
+                target_addr, rn, wn
+            );
+        }
+        Err(err) => {
+            info!(
+                "tcp tunnel to {} (bypassed) closed with error: {}",
+                target_addr, err
+            );
+        }
+    }
+
+    Ok(())
+}

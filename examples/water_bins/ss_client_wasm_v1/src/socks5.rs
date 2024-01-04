@@ -1,6 +1,7 @@
 use super::*;
 
 use bytes::{BufMut, BytesMut};
+use std::fmt::Formatter;
 use std::net::{SocketAddrV4, SocketAddrV6};
 
 #[rustfmt::skip]
@@ -33,6 +34,26 @@ impl Address {
     #[inline]
     pub fn serialized_len(&self) -> usize {
         get_addr_len(self)
+    }
+}
+
+impl Debug for Address {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match *self {
+            Address::SocketAddress(ref addr) => write!(f, "{addr}"),
+            Address::DomainNameAddress(ref addr, ref port) => write!(f, "{addr}:{port}"),
+        }
+    }
+}
+
+impl fmt::Display for Address {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match *self {
+            Address::SocketAddress(ref addr) => write!(f, "{addr}"),
+            Address::DomainNameAddress(ref addr, ref port) => write!(f, "{addr}:{port}"),
+        }
     }
 }
 

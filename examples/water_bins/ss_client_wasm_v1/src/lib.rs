@@ -24,7 +24,7 @@ use futures::ready;
 use lazy_static::lazy_static;
 use pin_project::pin_project;
 use tokio::{
-    io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, ReadBuf},
+    io::{copy_bidirectional, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, ReadBuf},
     net::{TcpListener, TcpStream},
 };
 use tracing::{debug, info, Level};
