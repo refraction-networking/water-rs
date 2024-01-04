@@ -96,6 +96,32 @@ impl WATERClient {
         })
     }
 
+    pub fn keep_listen(&mut self) -> Result<Self, anyhow::Error> {
+        info!("[HOST] WATERClient keep listening...",);
+
+        let water = match &mut self.stream {
+            WATERClientType::Listener(ref mut listener) => WATERClientType::Listener(Box::new(
+                v0::listener::WATERListener::migrate_listener(&self.config, listener.get_core())?,
+            )
+                as Box<dyn WATERListenerTrait>),
+            WATERClientType::Relay(ref mut relay) => WATERClientType::Relay(Box::new(
+                v0::relay::WATERRelay::migrate_listener(&self.config, relay.get_core())?,
+            )
+                as Box<dyn WATERRelayTrait>),
+            _ => {
+                return Err(anyhow::anyhow!(
+                    "[HOST] This client is neither a Listener nor a Relay"
+                ));
+            }
+        };
+
+        Ok(WATERClient {
+            config: self.config.clone(),
+            debug: self.debug,
+            stream: water,
+        })
+    }
+
     pub fn set_debug(&mut self, debug: bool) {
         self.debug = debug;
     }
@@ -185,10 +211,7 @@ impl WATERClient {
 
         match &mut self.stream {
             WATERClientType::Dialer(dialer) => dialer.run_entry_fn(&self.config),
-            WATERClientType::Listener(listener) => {
-                // TODO: clone listener here, since we are doing one WATM instance / accept
-                listener.run_entry_fn(&self.config)
-            }
+            WATERClientType::Listener(listener) => listener.run_entry_fn(&self.config),
             WATERClientType::Relay(relay) => relay.run_entry_fn(&self.config),
             _ => Err(anyhow::anyhow!("This client is not a Runner")),
         }

@@ -6,6 +6,8 @@
 
 pub mod wasm_shared_config;
 
+/// WATER configuration
+#[derive(Clone)]
 pub struct WATERConfig {
     /// Path to the .wasm binary
     pub filepath: String,
@@ -40,15 +42,15 @@ impl WATERConfig {
     }
 }
 
-/// A enum of types of the client
+/// WATER client type: A enum of types of the client
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum WaterBinType {
-    Unknown,
-    Wrap,
     Dial,
     Listen,
     Relay,
     Runner,
+    Wrap,
+    Unknown,
 }
 
 impl From<u32> for WaterBinType {
@@ -56,9 +58,9 @@ impl From<u32> for WaterBinType {
         match num {
             0 => WaterBinType::Dial,
             1 => WaterBinType::Listen,
-            2 => WaterBinType::Runner,
-            3 => WaterBinType::Wrap,
-            4 => WaterBinType::Relay,
+            2 => WaterBinType::Relay,
+            3 => WaterBinType::Runner,
+            4 => WaterBinType::Wrap,
             _ => WaterBinType::Unknown,
         }
     }

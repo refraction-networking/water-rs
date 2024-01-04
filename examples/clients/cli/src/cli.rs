@@ -1,15 +1,12 @@
-use water::config::WATERConfig;
+use water::config::{WATERConfig, WaterBinType};
 use water::globals::{CONFIG_WASM_PATH, MAIN, WASM_PATH};
+use water::runtime;
 
 use clap::Parser;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// optional address on which to listen
-    #[arg(short, long, default_value_t = String::from("127.0.0.1:9001"))]
-    listen: String,
-
     /// Optional argument specifying the .wasm file to load
     #[arg(short, long, default_value_t = String::from(WASM_PATH))]
     wasm_path: String,
@@ -23,11 +20,11 @@ struct Args {
     config_wasm: String,
 
     /// Optional argument specifying the client_type, default to be Runner
-    #[arg(short, long, default_value_t = 2)]
+    #[arg(short, long, default_value_t = 3)]
     type_client: u32,
 
     /// Optional argument enabling debug logging
-    #[arg(short, long, default_value_t = false)]
+    #[arg(short, long, default_value_t = true)]
     debug: bool,
 }
 
@@ -37,7 +34,7 @@ impl From<Args> for WATERConfig {
             filepath: args.wasm_path,
             entry_fn: args.entry_fn,
             config_wasm: args.config_wasm,
-            client_type: args.type_client.into(),
+            client_type: WaterBinType::from(args.type_client),
             debug: args.debug,
         }
     }
@@ -55,23 +52,20 @@ pub fn parse_and_execute() -> Result<(), anyhow::Error> {
 }
 
 pub fn execute(_conf: WATERConfig) -> Result<(), anyhow::Error> {
-    // let mut water_client = runtime::WATERClient::new(conf)?;
+    let mut water_client = runtime::client::WATERClient::new(_conf).unwrap();
 
-    // // FIXME: hardcoded the addr & port for now
-    // water_client.connect("", 0)?;
-
-    // loop {
-    //     // keep reading from stdin and call read and write function from water_client.stream
-    //     let mut buf = String::new();
-    //     std::io::stdin().read_line(&mut buf)?;
-
-    //     water_client.write(buf.as_bytes())?;
-
-    //     let mut buf = vec![0; 1024];
-    //     water_client.read(&mut buf)?;
-
-    //     println!("read: {:?}", String::from_utf8_lossy(&buf));
-    // }
+    match water_client.config.client_type {
+        WaterBinType::Dial => {
+            water_client.connect().unwrap();
+        }
+        WaterBinType::Runner => {
+            water_client.execute().unwrap();
+        }
+        WaterBinType::Listen => {}
+        WaterBinType::Relay => {}
+        WaterBinType::Wrap => {}
+        WaterBinType::Unknown => {}
+    }
 
     Ok(())
 }
