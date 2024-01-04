@@ -49,7 +49,7 @@ use water_wasm::*;
 use shadowsocks_crypto::{v1::random_iv_or_salt, v1::Cipher, CipherKind};
 
 // Export version info
-#[export_name = "V1"]
+#[export_name = "_water_v1"]
 pub static V1: i32 = 0;
 
 // create a mutable global variable stores a pointer to the config

@@ -9,15 +9,22 @@ impl WATERRunner<Host> {
     pub fn run(&mut self, conf: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERRunner running...");
 
+        let store_lock_result = self.core.store.lock();
+
+        let mut store = match store_lock_result {
+            Ok(store) => store,
+            Err(e) => return Err(anyhow::Error::msg(format!("Failed to lock store: {}", e))),
+        };
+
         let fnc = self
             .core
             .instance
-            .get_func(&mut self.core.store, &conf.entry_fn)
+            .get_func(&mut *store, &conf.entry_fn)
             .context(format!(
                 "failed to find declared entry function: {}",
                 &conf.entry_fn
             ))?;
-        match fnc.call(&mut self.core.store, &[], &mut []) {
+        match fnc.call(&mut *store, &[], &mut []) {
             Ok(_) => {}
             Err(e) => return Err(anyhow::Error::msg(format!("run function failed: {}", e))),
         }
@@ -25,11 +32,8 @@ impl WATERRunner<Host> {
         Ok(())
     }
 
-    pub fn init(conf: &WATERConfig) -> Result<Self, anyhow::Error> {
+    pub fn init(_conf: &WATERConfig, core: H2O<Host>) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERRunner init...");
-
-        let mut core = H2O::init(conf)?;
-        core._prepare(conf)?;
 
         let runtime = WATERRunner { core };
 

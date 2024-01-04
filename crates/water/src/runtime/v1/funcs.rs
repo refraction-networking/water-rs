@@ -5,7 +5,6 @@ use crate::runtime::*;
 use std::convert::TryInto;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
-// TODO: rename this to dial_v1, since it has the ability to let WASM choose ip:port
 pub fn export_tcp_connect(linker: &mut Linker<Host>) -> Result<(), anyhow::Error> {
     linker
         .func_wrap(
@@ -75,7 +74,6 @@ pub fn export_tcp_connect(linker: &mut Linker<Host>) -> Result<(), anyhow::Error
     Ok(())
 }
 
-// TODO: rename this to dial_v1, since it has the ability to let WASM listen on a TcpListener
 pub fn export_tcplistener_create(linker: &mut Linker<Host>) -> Result<(), anyhow::Error> {
     linker
         .func_wrap(
@@ -135,20 +133,3 @@ pub fn export_tcplistener_create(linker: &mut Linker<Host>) -> Result<(), anyhow
         .context("Failed to export TcpListener create function to WASM")?;
     Ok(())
 }
-
-// Generically link dial functions
-// pub fn linkDialFns(linker: &mut Linker<Host>) {
-//     let network = vec!["tcplistener", "tlslistener", "udp"];
-
-//     for net in &network {
-//         match linker.func_wrap("env", &format!("connect_{}", net), move |mut caller: Caller<'_, Host>, ptr: u32, size: u32| -> i32{
-//             // TODO: get addr from WASM
-
-//             let socket_fd = dialer.Dial(net, addr).unwrap();
-//             socket_fd
-//         }) {
-//             Ok(_) => {},
-//             Err(e) => { eprintln!("Failed to define function: {}", e) },
-//         };
-//     }
-// }
