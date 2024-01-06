@@ -129,4 +129,14 @@ impl WATERListener<Host> {
 
         Ok(runtime)
     }
+
+    pub fn migrate_listener(_conf: &WATERConfig, core: &H2O<Host>) -> Result<Self, anyhow::Error> {
+        info!("[HOST] WATERListener v0 migrating listener...");
+
+        let mut new_core =
+            core::H2O::v0_migrate_core(_conf, core).context("Failed to migrate core")?;
+        new_core._prepare(_conf)?;
+
+        WATERListener::init(_conf, new_core)
+    }
 }

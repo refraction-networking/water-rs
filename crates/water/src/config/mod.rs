@@ -1,5 +1,6 @@
 pub mod wasm_shared_config;
 
+#[derive(Clone)]
 pub struct WATERConfig {
     pub filepath: String,
     pub entry_fn: String,

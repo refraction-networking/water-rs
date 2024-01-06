@@ -121,7 +121,7 @@ async fn wasm_managed_shadowsocks_async() -> Result<(), Box<dyn std::error::Erro
     tracing_subscriber::fmt().with_max_level(Level::INFO).init();
 
     // ==== setup official Shadowsocks server ====
-    const SERVER_ADDR: &str = "127.0.0.1:8388";
+    const SERVER_ADDR: &str = "127.0.0.1:8088";
     const LOCAL_ADDR: &str = "127.0.0.1:8081";
 
     const PASSWORD: &str = "Test!23";
@@ -198,9 +198,9 @@ async fn wasm_managed_shadowsocks_bypass_async() -> Result<(), Box<dyn std::erro
     let cfg_str = r#"
 	{
 		"remote_address": "127.0.0.1",
-		"remote_port": 0,
+		"remote_port": 10085,
 		"local_address": "127.0.0.1",
-		"local_port": 8888,
+		"local_port": 10086,
         "bypass": true
 	}
 	"#;
@@ -230,12 +230,18 @@ async fn wasm_managed_shadowsocks_bypass_async() -> Result<(), Box<dyn std::erro
     // Give some time for the WASM client to start
     thread::sleep(Duration::from_millis(1000));
 
-    let wasm_ss_client_addr = SocketAddr::new("127.0.0.1".parse().unwrap(), 8888);
+    let wasm_ss_client_addr = SocketAddr::new("127.0.0.1".parse().unwrap(), 10086);
 
     // ==== test WASM Shadowsocks client ====
     // currently only support connect by ip,
-    // this is the ip of detectportal.firefox.com
-    let ip: IpAddr = "143.244.220.150".parse().unwrap();
+    // get the ip of detectportal.firefox.com
+
+    let mut addrs = "detectportal.firefox.com:80".to_socket_addrs()?;
+    let ip = addrs
+        .find(|addr| addr.is_ipv4())
+        .ok_or("No IPv4 address found for detectportal.firefox.com")?;
+
+    let ip: IpAddr = ip.ip().to_string().parse().unwrap();
     let port = 80;
 
     let mut c = Socks5TcpClient::connect(
