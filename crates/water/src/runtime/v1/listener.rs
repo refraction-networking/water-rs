@@ -40,7 +40,7 @@ impl WATERTransportTrait for WATERListener<Host> {
             }
         }
 
-        let nums: i64 = match res.get(0) {
+        let nums: i64 = match res.first() {
             Some(wasmtime::Val::I64(v)) => *v,
             _ => {
                 return Err(anyhow::Error::msg(format!(
@@ -91,7 +91,7 @@ impl WATERTransportTrait for WATERListener<Host> {
         let mut res = vec![Val::I64(0)];
         match self.writer.call(&mut *store, &params, &mut res) {
             Ok(_) => {
-                match res.get(0) {
+                match res.first() {
                     Some(wasmtime::Val::I64(v)) => {
                         if *v != buf.len() as i64 {
                             return Err(anyhow::Error::msg(format!(
