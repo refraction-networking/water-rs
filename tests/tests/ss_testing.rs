@@ -236,10 +236,9 @@ async fn wasm_managed_shadowsocks_bypass_async() -> Result<(), Box<dyn std::erro
     // currently only support connect by ip,
     // get the ip of detectportal.firefox.com
 
-    let addrs = "detectportal.firefox.com:80".to_socket_addrs()?;
+    let mut addrs = "detectportal.firefox.com:80".to_socket_addrs()?;
     let ip = addrs
-        .filter(|addr| addr.is_ipv4())
-        .next()
+        .find(|addr| addr.is_ipv4())
         .ok_or("No IPv4 address found for detectportal.firefox.com")?;
 
     let ip: IpAddr = ip.ip().to_string().parse().unwrap();
