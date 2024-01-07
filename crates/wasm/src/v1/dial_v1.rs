@@ -22,7 +22,6 @@ impl Dialer {
     
         let mut fd: i32 = -1;
         
-        // FIXME: hardcoded the filename for now, make it a config later
         fd = self.tcp_connect()?;
     
         if fd < 0 {

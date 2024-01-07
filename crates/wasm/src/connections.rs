@@ -63,27 +63,30 @@ impl ConnFile {
 }
 
 // A Connection normally contains both in & outbound streams + a config
-pub struct Connection {
+pub struct Connection<T> {
     pub inbound_conn: ConnFile,
     pub outbound_conn: ConnFile,
 
-    pub config: Config,
+    pub config: T,
 }
 
-impl Default for Connection {
+impl<T: Default> Default for Connection<T> {
     fn default() -> Self {
-        Self::new()
+        Self {
+            inbound_conn: ConnFile::new(),
+            outbound_conn: ConnFile::new(),
+            config: T::default(),
+        }
     }
 }
 
-impl Connection {
+impl<T> Connection<T> {
     // A default constructor
-    pub fn new() -> Self {
+    pub fn new(config: T) -> Self {
         Connection {
             inbound_conn: ConnFile::new(),
             outbound_conn: ConnFile::new(),
-
-            config: Config::new(),
+            config,
         }
     }
 

@@ -57,7 +57,6 @@ pub fn parse_and_execute() -> Result<(), anyhow::Error> {
 pub fn execute(_conf: WATERConfig) -> Result<(), anyhow::Error> {
     // let mut water_client = runtime::WATERClient::new(conf)?;
 
-    // // FIXME: hardcoded the addr & port for now
     // water_client.connect("", 0)?;
 
     // loop {
