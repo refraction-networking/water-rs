@@ -1,3 +1,6 @@
+//! A general runner that don't have any pre-defined roles where it all depends on the configuration passed in.
+//! Currently used for v1_preview's relay mode, running shadowsocks.wasm.
+
 use crate::runtime::*;
 
 pub struct WATERRunner<Host> {

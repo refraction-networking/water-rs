@@ -38,7 +38,7 @@ impl WATERClient {
     pub fn new(conf: WATERConfig) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERClient initializing ...");
 
-        let mut core = H2O::init(&conf)?;
+        let mut core = H2O::init_core(&conf)?;
         core._prepare(&conf)?;
 
         let water = match conf.client_type {

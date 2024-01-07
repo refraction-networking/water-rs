@@ -1,3 +1,5 @@
+//! Global constants used by the WATER runtime.
+
 #![allow(dead_code)]
 
 pub const WASM_PATH: &str = "./proxy.wasm";

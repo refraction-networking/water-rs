@@ -1,5 +1,7 @@
-// lib.rs
-// export all modules
+//! lib.rs
+//! export all modules
+//!
+
 pub mod config;
 pub mod connections;
 pub mod decoder;
@@ -35,8 +37,11 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 // TODO: move these to speicific implementations, shouldn't be in the crate lib
+
 // =================== WASM Imports =====================
 extern "C" {
+    /// These functions are imported from the host to the WASM module.
+    /// host must provide these functions to the WASM module.
     // #[link_name = "create-listen"]
     pub fn create_listen(ptr: u32, size: u32) -> i32;
     pub fn connect_tcp(ptr: u32, size: u32) -> i32;

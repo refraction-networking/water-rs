@@ -1,3 +1,7 @@
+//! Transport trait for WASM runtime
+//!
+//!
+
 use std::thread::JoinHandle;
 
 use crate::runtime::*;
@@ -46,25 +50,36 @@ pub trait WATERTransportTrait: Send {
         }
     }
 
-    // ============================ v0 only ============================
+    // ======================== v0 only below for now ========================
     // Methods to provide access to the shared state, not implemented by default
+
+    /// v0 only, Get the caller_io (UnixStream) from the WATM runtime object
     fn get_caller_io(&mut self) -> &mut Option<UnixStream> {
         unimplemented!("get_caller_io not implemented")
     }
+
+    /// v0 only, Get the cancel_io (UnixStream) from the WATM runtime object
     fn get_cancel_io(&mut self) -> &mut Option<UnixStream> {
         unimplemented!("get_cancel_io not implemented")
     }
+
+    /// v0 only, Get the core (H2O) from the WATM runtime object
     fn get_core(&mut self) -> &mut H2O<Host> {
         unimplemented!("get_core not implemented")
     }
 
+    /// v0 only, Set the caller_io (UnixStream) in the WATM runtime object
     fn set_caller_io(&mut self, _caller_io: Option<UnixStream>) {
         unimplemented!("set_caller_io not implemented")
     }
+
+    /// v0 only, Set the cancel_io (UnixStream) in the WATM runtime object
     fn set_cancel_io(&mut self, _cancel_io: Option<UnixStream>) {
         unimplemented!("set_cancel_io not implemented")
     }
 
+    /// v0 only, Set the cancel_io (UnixStream) in the WATM runtime object and
+    /// call the corresponding setup function in WATM
     fn cancel_with(&mut self, _conf: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERTransport v0 cancel_with...");
 
@@ -126,6 +141,7 @@ pub trait WATERTransportTrait: Send {
         Ok(())
     }
 
+    /// v0 only, Cancel the connection by writing to the prev set cancel_io (UnixStream)
     fn cancel(&mut self, _conf: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERTransport v0 cancel...");
 
@@ -149,6 +165,7 @@ pub trait WATERTransportTrait: Send {
         }
     }
 
+    /// v0 only, Run the entry_fn in a separate thread
     fn run_entry_fn(
         &mut self,
         conf: &WATERConfig,
