@@ -12,7 +12,7 @@ pub struct SSConfig {
     pub local_port: u32,
     pub password: String,
     pub bypass: bool,
-    // NOTE: will add the config for ciphter method later
+    // NOTE: will add the config for cipher method later
     // pub method: CipherKind,
 }
 

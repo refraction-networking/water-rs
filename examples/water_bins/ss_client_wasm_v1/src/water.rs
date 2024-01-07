@@ -2,6 +2,7 @@ use super::*;
 
 use bytes::{BufMut, BytesMut};
 use shadowsocks_crypto::v1::openssl_bytes_to_key;
+use std::sync::Arc;
 
 #[cfg(target_family = "wasm")]
 #[export_name = "_water_init"]
@@ -118,6 +119,9 @@ async fn _start_listen(bypass: bool) -> std::io::Result<()> {
         openssl_bytes_to_key(global_conn.config.password.as_bytes(), &mut enc_key);
     }
 
+    // Create a Arc for the encryption key
+    let enc_key = Arc::new(enc_key);
+
     info!("[WASM] Starting to listen...");
 
     loop {
@@ -130,14 +134,18 @@ async fn _start_listen(bypass: bool) -> std::io::Result<()> {
             }
         };
 
-        // Clone server_addr + enc_key for each iteration of the loop.
+        // Clone server_addr(will be changed) for each iteration of the loop.
         let server_addr_clone = server_addr.clone();
-        let enc_key_clone = enc_key.clone();
+
+        // Clone the Arc for enc_key to save resources.
+        let enc_key_clone = Arc::clone(&enc_key);
+
+        // let enc_key_clone = enc_key.clone();
 
         // Spawn a background task for each new connection.
         tokio::spawn(async move {
             eprintln!("[WASM] > CONNECTED");
-            match _handle_connection(socket, server_addr_clone, enc_key_clone, bypass).await {
+            match _handle_connection(socket, server_addr_clone, &enc_key_clone, bypass).await {
                 Ok(()) => eprintln!("[WASM] > DISCONNECTED"),
                 Err(e) => eprintln!("[WASM] > ERROR: {}", e),
             }
@@ -149,7 +157,7 @@ async fn _start_listen(bypass: bool) -> std::io::Result<()> {
 async fn _handle_connection(
     stream: TcpStream,
     server_addr: Address,
-    key: Box<[u8]>,
+    key: &[u8],
     bypass: bool,
 ) -> std::io::Result<()> {
     let mut inbound_con = Socks5Handler::new(stream);
@@ -173,7 +181,7 @@ async fn _handle_connection(
 async fn _connect(
     target_addr: Address,
     server_addr: Address,
-    key: Box<[u8]>,
+    key: &[u8],
     inbound_con: &mut Socks5Handler,
 ) -> std::io::Result<()> {
     let server_stream = _dial_remote(&server_addr).expect("Failed to dial to SS-Server");
@@ -185,14 +193,8 @@ async fn _connect(
 
     inbound_con.socks5_response(&mut buf).await;
 
-    // FIXME: hardcoded the key which derived from the password: "Test!23"
-    // let key = [
-    //     128, 218, 128, 160, 125, 72, 115, 9, 187, 165, 163, 169, 92, 177, 35, 201, 49, 245, 92,
-    //     203, 57, 152, 63, 149, 108, 132, 60, 128, 201, 206, 82, 226,
-    // ];
-
     // creating the client proxystream -- contains cryptostream with both AsyncRead and AsyncWrite implemented
-    let mut proxy = ProxyClientStream::from_stream(server_stream, target_addr, CIPHER_METHOD, &key);
+    let mut proxy = ProxyClientStream::from_stream(server_stream, target_addr, CIPHER_METHOD, key);
 
     match copy_encrypted_bidirectional(CIPHER_METHOD, &mut proxy, &mut inbound_con.stream).await {
         Ok((wn, rn)) => {
