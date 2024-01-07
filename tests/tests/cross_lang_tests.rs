@@ -180,14 +180,14 @@ fn test_cross_lang_wasm_listener() -> Result<(), Box<dyn std::error::Error>> {
 
 // #[test]
 // fn test_cross_lang_wasm_multi_listener() -> Result<(), Box<dyn std::error::Error>> {
-//     tracing_subscriber::fmt().with_max_level(Level::INFO).init();
+//     // tracing_subscriber::fmt().with_max_level(Level::INFO).init();
 
 //     let cfg_str = r#"
 // 	{
 // 		"remote_address": "127.0.0.1",
 // 		"remote_port": 8088,
 // 		"local_address": "127.0.0.1",
-// 		"local_port": 8082
+// 		"local_port": 8084
 // 	}
 // 	"#;
 //     // Create a directory inside of `std::env::temp_dir()`.
