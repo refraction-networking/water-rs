@@ -1,34 +1,36 @@
+//! This file contains the v1_preview WATERStream implementation,
+//! it implements the WATERStreamTrait and WATERTransportTrait.
+
 use crate::runtime::{stream::WATERStreamTrait, transport::WATERTransportTrait, *};
 
 /// This file contains the WATERStream implementation
 /// which is a TcpStream liked definition with utilizing WASM
-
-//           UnixSocket          Connection created with Host
-//    Write =>  u2w  +----------------+  w2n
-//		       ----->|  WATERStream   |------>
-//		Caller       |  WASM Runtime  |  n2w    Destination
-//		       <-----| Decode/Encode  |<------
-//    Read  =>  w2u  +----------------+
-//	                    WATERStream
+/// ```ignore
+///           UnixSocket          Connection created with Host
+///    Write =>  u2w  +----------------+  w2n
+///            -----> |  WATERStream   | ------>
+///    Caller         |  WASM Runtime  |  n2w    Destination
+///            <----- | Decode/Encode  | <------
+///    Read  =>  w2u  +----------------+
+///                      WATERStream
+/// ```
 
 pub struct WATERStream<Host> {
-    // WASM functions for reading & writing
-
-    // the reader in WASM (read from net -- n2w)
-    // returns the number of bytes read
+    /// the reader in WASM (read from net -- n2w), returns the number of bytes read
     pub reader: Func,
 
-    // the writer in WASM (write to net -- w2n)
-    // returns the number of bytes written
+    /// the writer in WASM (write to net -- w2n), returns the number of bytes written
     pub writer: Func,
 
-    pub caller_io: UnixStream, // the pipe for communcating between Host and WASM
+    /// the pipe for communcating between Host and WASM
+    pub caller_io: UnixStream,
 
-    pub core: H2O<Host>, // core WASM runtime (engine, linker, instance, store, module)
+    /// core WASM runtime (engine, linker, instance, store, module)
+    pub core: H2O<Host>,
 }
 
 impl WATERTransportTrait for WATERStream<Host> {
-    /// Read from the target address
+    /// Read from the target address thru the WATM module
     fn read(&mut self, buf: &mut Vec<u8>) -> Result<i64, anyhow::Error> {
         debug!("[HOST] WATERStream v1_preview reading...");
 
@@ -75,7 +77,7 @@ impl WATERTransportTrait for WATERStream<Host> {
         Ok(nums)
     }
 
-    /// Write to the target address
+    /// Write to the target address thru the WATM module
     fn write(&mut self, buf: &[u8]) -> Result<(), anyhow::Error> {
         debug!("[HOST] WATERStream v1_preview writing...");
 
@@ -130,7 +132,7 @@ impl WATERTransportTrait for WATERStream<Host> {
 }
 
 impl WATERStreamTrait for WATERStream<Host> {
-    /// Connect to the target address with running the WASM connect function
+    /// Connect to the target address with running the WATM connect function
     fn connect(&mut self, _conf: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERStream v1_preview connecting...");
 

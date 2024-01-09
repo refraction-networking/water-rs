@@ -1,3 +1,5 @@
+//! Version specific logic implementation for WATER, mainly for v0 configuration for now.
+
 use std::fmt;
 use std::str::FromStr;
 use std::sync::Mutex;
@@ -21,7 +23,7 @@ impl Version {
         }
     }
 
-    // Current API v0 needs some configurations at the beginning
+    /// Current API v0 needs some configurations at the beginning
     pub fn config_v0(&mut self, conf: &WATERConfig) -> Result<Version, anyhow::Error> {
         info!("[HOST] WATERCore configuring for V0");
 
@@ -95,6 +97,7 @@ impl FromStr for Version {
 impl From<&Version> for &'static str {
     fn from(v: &Version) -> &'static str {
         match v {
+            // currently we assign the version as Unknown(dummy var) when WATER is setting up
             Version::Unknown => "_water_setting_up",
             Version::V0(_v0_conf) => "_water_v0",
             Version::V1 => "_water_v1",

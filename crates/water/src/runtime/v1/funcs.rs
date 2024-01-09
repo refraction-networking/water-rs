@@ -1,3 +1,5 @@
+//! Exported functions implementation for v1_preview WATM module from the Host
+
 use anyhow::Ok;
 
 use crate::config::wasm_shared_config::StreamConfig;
@@ -5,6 +7,8 @@ use crate::runtime::*;
 use std::convert::TryInto;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
+/// This function is exporting the `connect_tcp(ptr: u32, size:u32) -> i32`
+/// to the WATM where it is used to create a tcp connection and returns the fd of the connection used by Dialer & Relay.
 pub fn export_tcp_connect(linker: &mut Linker<Host>) -> Result<(), anyhow::Error> {
     linker
         .func_wrap(
@@ -74,6 +78,8 @@ pub fn export_tcp_connect(linker: &mut Linker<Host>) -> Result<(), anyhow::Error
     Ok(())
 }
 
+/// This function is exporting the `create_listen(ptr: u32, size: u32) -> i32`
+/// to the WATM where it is used to create a tcp listener and returns the fd of the listener used by Listener & Relay.
 pub fn export_tcplistener_create(linker: &mut Linker<Host>) -> Result<(), anyhow::Error> {
     linker
         .func_wrap(

@@ -7,7 +7,7 @@ if [ $# -ne 2 ]; then
 fi
 
 # Change directory to the source directory
-cd "examples/water_bins/$1" || exit 1
+cd "./examples/water_bins/$1" || exit 1
 
 # Build the project using cargo
 cargo build --target wasm32-wasi || exit 1

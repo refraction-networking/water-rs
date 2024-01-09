@@ -1,3 +1,7 @@
+//! This is the test file for testing the plain.wasm which is a v0_plus WATM module that has been tested with the Go engine.
+//!
+//! Tests here are showing that the same WATM module can be used interchangeably in both the Rust and Go engine.
+
 #![allow(dead_code)]
 
 use water::*;
@@ -13,6 +17,7 @@ use std::{
 
 use tempfile::tempdir;
 
+/// Testing the Dialer mode
 #[test]
 fn test_cross_lang_wasm_dialer() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt().with_max_level(Level::INFO).init();
@@ -96,6 +101,7 @@ fn test_cross_lang_wasm_dialer() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// Testing the Listener mode
 #[test]
 fn test_cross_lang_wasm_listener() -> Result<(), Box<dyn std::error::Error>> {
     let cfg_str = r#"

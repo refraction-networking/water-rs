@@ -1,16 +1,30 @@
+//! This module is to define the `WATERClient` struct and its methods
+//!
+//! `WATERClient` is the main struct that holds the WATERClientType and WATERConfig; used as the entry point of using the WATER runtime
+//!
+//! `WATERClientType` is an enum type that holds different types of clients
+
 use crate::runtime::*;
 use listener::WATERListenerTrait;
 use relay::WATERRelayTrait;
 use stream::WATERStreamTrait;
 
-// =================== WATERClient Definition ===================
+/// `WATERClientType` Definition: A enum type to hold different types of clients
 pub enum WATERClientType {
+    /// `Dialer`: create 1 WATM instance with the given `.wasm` binary to connect to a remote address
     Dialer(Box<dyn WATERStreamTrait>),
+
+    /// `Listener`: create 1 WATM instance with the given `.wasm` binary to listen on a local address, and accept 1 connection (v0) or multiple connections asynchronizely (v1)
     Listener(Box<dyn WATERListenerTrait>),
+
+    /// `Relay`: create 1 WATM instance with the given `.wasm` binary to listen on a local address, and connect to a remote address
     Relay(Box<dyn WATERRelayTrait>),
-    Runner(WATERRunner<Host>), // This is a customized runner -- not like any stream
+
+    /// `Runner`: create 1 WATM instance with the given `.wasm` binary to run the `entry_fn`
+    Runner(WATERRunner<Host>), // This is a customized runner -- not like any stream; currently can run v1 relay (shadowsocks client)
 }
 
+/// `WATERClient` is used as the object for entering and managing the WASM runtime
 pub struct WATERClient {
     debug: bool,
 
@@ -19,13 +33,14 @@ pub struct WATERClient {
 }
 
 impl WATERClient {
+    /// `new` is the constructor of `WATERClient`
+    /// it checks the client type and the version to create the corresponding `WATERClientType`
     pub fn new(conf: WATERConfig) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERClient initializing ...");
 
-        let mut core = H2O::init(&conf)?;
+        let mut core = H2O::init_core(&conf)?;
         core._prepare(&conf)?;
 
-        // client_type: 0 -> Dialer, 1 -> Listener, 2 -> Runner
         let water = match conf.client_type {
             WaterBinType::Dial => {
                 let stream = match core.version {
@@ -81,6 +96,8 @@ impl WATERClient {
         })
     }
 
+    /// keep_listen is the function that is called when user wants to accept a newly income connection,
+    /// it creates a new WASM instance and migrate the previous listener to it. Used by v0 listener and relay for now.
     pub fn keep_listen(&mut self) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERClient keep listening...",);
 
@@ -111,6 +128,7 @@ impl WATERClient {
         self.debug = debug;
     }
 
+    /// `connect` is the entry point for `Dialer` to connect to a remote address
     pub fn connect(&mut self) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERClient connecting ...");
 
@@ -125,12 +143,16 @@ impl WATERClient {
         Ok(())
     }
 
+    /// `listen` is the function for `Listener` and `Relay` to create the Listener and listen on a local addr
     pub fn listen(&mut self) -> Result<(), anyhow::Error> {
-        info!("[HOST] WATERClient listening ...");
+        info!("[HOST] WATERClient creating listener ...");
 
         match &mut self.stream {
             WATERClientType::Listener(listener) => {
                 listener.listen(&self.config)?;
+            }
+            WATERClientType::Relay(relay) => {
+                relay.listen(&self.config)?;
             }
             _ => {
                 return Err(anyhow::anyhow!("[HOST] This client is not a Listener"));
@@ -139,20 +161,7 @@ impl WATERClient {
         Ok(())
     }
 
-    pub fn relay(&mut self) -> Result<(), anyhow::Error> {
-        info!("[HOST] WATERClient relaying ...");
-
-        match &mut self.stream {
-            WATERClientType::Relay(relay) => {
-                relay.relay(&self.config)?;
-            }
-            _ => {
-                return Err(anyhow::anyhow!("[HOST] This client is not a Relay"));
-            }
-        }
-        Ok(())
-    }
-
+    /// `associate` is the entry point for `Relay` to associate with a remote addr
     pub fn associate(&mut self) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERClient relaying ...");
 
@@ -167,6 +176,8 @@ impl WATERClient {
         Ok(())
     }
 
+    /// `accept` is the entry point for `Listener` to accept a connection
+    /// called after `listen`
     pub fn accept(&mut self) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERClient accepting ...");
 
@@ -181,7 +192,8 @@ impl WATERClient {
         Ok(())
     }
 
-    // this will start a worker(WATM) in a separate thread -- returns a JoinHandle
+    /// `run_worker` is the entry point for `Runner` to run the entry_fn(a worker in WATM) in a separate thread
+    /// it will return a `JoinHandle` for the caller to manage the thread -- used by v0 currently
     pub fn run_worker(
         &mut self,
     ) -> Result<std::thread::JoinHandle<Result<(), anyhow::Error>>, anyhow::Error> {
@@ -195,7 +207,8 @@ impl WATERClient {
         }
     }
 
-    // this will run the entry_fn(WATM) in the current thread -- replace Host when running
+    /// `execute` is the entry point for `Runner` to run the entry_fn(a worker in WATM) in the current thread
+    /// -- replace the thread running Host when running it <- used by v1 currently
     pub fn execute(&mut self) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERClient Executing ...");
 
@@ -216,7 +229,7 @@ impl WATERClient {
         Ok(())
     }
 
-    // v0 func for Host to set pipe for canceling later
+    /// `cancel_with` is the function to set the pipe for canceling later -- v0
     pub fn cancel_with(&mut self) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERClient cancel_with ...");
 
@@ -238,7 +251,7 @@ impl WATERClient {
         Ok(())
     }
 
-    // v0 func for Host to terminate the separate thread running worker(WATM)
+    /// `cancel` is the function to cancel the thread running the entry_fn -- v0
     pub fn cancel(&mut self) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERClient canceling ...");
 
@@ -260,6 +273,7 @@ impl WATERClient {
         Ok(())
     }
 
+    /// `read` is the function to read from the stream
     pub fn read(&mut self, buf: &mut Vec<u8>) -> Result<i64, anyhow::Error> {
         info!("[HOST] WATERClient reading ...");
 
@@ -274,6 +288,7 @@ impl WATERClient {
         Ok(read_bytes)
     }
 
+    /// `write` is the function to write to the stream
     pub fn write(&mut self, buf: &[u8]) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERClient writing ...");
 

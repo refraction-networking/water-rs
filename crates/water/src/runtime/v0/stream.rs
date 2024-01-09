@@ -1,25 +1,29 @@
+//! This file contains the v0_plus WATERStream implementation,
+//! it implements the WATERStreamTrait and WATERTransportTrait.
+
 use crate::runtime::{stream::WATERStreamTrait, transport::WATERTransportTrait, *};
-// use crate::runtime::{stream::WATERStreamTrait, *, v0::transport::WATERTransportTraitV0, transport::WATERTransportTrait};
 
 /// This file contains the WATERStream implementation
 /// which is a TcpStream liked definition with utilizing WASM
-
-//           UnixSocket          Connection created with Host
-//    Write =>  u2w  +----------------+  w2n
-//		       ----->|  WATERStream   |------>
-//		Caller       |  WASM Runtime  |  n2w    Destination
-//		       <-----| Decode/Encode  |<------
-//    Read  =>  w2u  +----------------+
-//	                    WATERStream
+/// ```ignore
+///           UnixSocket          Connection created with Host
+///    Write =>  u2w  +----------------+  w2n
+///            -----> |  WATERStream   | ------>
+///    Caller         |  WASM Runtime  |  n2w    Destination
+///            <----- | Decode/Encode  | <------
+///    Read  =>  w2u  +----------------+
+///                      WATERStream
+/// ```
 
 pub struct WATERStream<Host> {
-    pub caller_io: Option<UnixStream>, // the pipe for communcating between Host and WASM
-    pub cancel_io: Option<UnixStream>, // the UnixStream side for communcating between Host and WASM
+    /// the pipe for communcating between Host and WASM
+    pub caller_io: Option<UnixStream>,
+    /// the UnixStream side for communcating between Host and WASM
+    pub cancel_io: Option<UnixStream>,
 
-    pub core: H2O<Host>, // core WASM runtime (engine, linker, instance, store, module)
+    /// core WASM runtime (engine, linker, instance, store, module)
+    pub core: H2O<Host>,
 }
-
-// impl WATERTransportTrait for WATERStream<Host> {}
 
 impl WATERTransportTrait for WATERStream<Host> {
     fn get_caller_io(&mut self) -> &mut Option<UnixStream> {

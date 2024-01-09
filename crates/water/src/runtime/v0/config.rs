@@ -1,3 +1,5 @@
+//! Configurations for the v0 runtime
+
 use std::os::fd::{AsRawFd, FromRawFd, IntoRawFd};
 
 use anyhow::Context;
@@ -19,7 +21,7 @@ impl Default for Config {
     }
 }
 
-// implement a constructor for the config
+/// Constructor for the config
 impl Config {
     pub fn new() -> Self {
         Config {
@@ -33,7 +35,6 @@ impl Config {
     pub fn from(config_file: &str) -> Result<Self, anyhow::Error> {
         let config_file =
             std::fs::read_to_string(config_file).context("failed to read config file")?;
-        // let config: Config = json::from_str(&config_file).context("failed to parse config file")?;
 
         let config: Config = match serde_json::from_str(&config_file) {
             Ok(config) => config,
@@ -47,16 +48,21 @@ impl Config {
     }
 }
 
+/// A enum to store the role of the connection for v0 as well as the fd for the connection
+/// Listener and Relay will have multiple fds for bi-directional connections.
 #[derive(Debug, Clone)]
 pub enum V0CRole {
     Unknown,
     Dialer(i32),
-    Listener(i32, i32),   // listener_fd, accepted_fd
-    Relay(i32, i32, i32), // listener_fd, accepted_fd, dialer_fd
+
+    /// listener_fd, accepted_fd
+    Listener(i32, i32),
+
+    /// listener_fd, accepted_fd, dialer_fd
+    Relay(i32, i32, i32),
 }
 
-// V0 specific configurations
-// The addr:port pair will either be local / remote depend on the client_type
+/// V0 specific configurations with the V0Role stored
 #[derive(Debug, Clone)]
 pub struct V0Config {
     pub name: String,

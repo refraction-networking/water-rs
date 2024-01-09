@@ -7,7 +7,7 @@ resolver="2"
 
 
 [workspace.package]
-authors = ["cerikccc@gmail.com", "gaukas", "jmwample", "ewust"]
+authors = ["hi@erikchi.com", "gaukas", "jmwample", "ewust"]
 description = "Water WebAssembly Transport Executor for rust"
 edition = "2021"
 # documentation = "https://example.com/bar"

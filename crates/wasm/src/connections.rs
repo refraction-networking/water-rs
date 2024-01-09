@@ -1,3 +1,14 @@
+//! This module contains the Connection struct, which is the main struct for a connection
+//! that contains the inbound and outbound streams and the config for the connection in the WATM module.
+//!
+//! The config is a generic type that can be defined / replaced by the WATM module where it decouples
+//! the configuration of WATM module from the Host program, where if there is a config diff,
+//! we don't need to recompile the Host program to achieve our fast deloyment goal.
+//!
+//!
+//! The module also contains the ConnFile struct, which is the struct for one way of connection -- either for in / outbound
+//!
+
 use super::*;
 
 // ConnStream can store either a network stream Or a file stream
@@ -15,7 +26,7 @@ impl ConnStream {
     }
 }
 
-// ConnFile is the struct for a connection -- either for in / outbound
+/// ConnFile is the struct for a connection -- either for in / outbound
 pub struct ConnFile {
     pub fd: i32,
     pub file: Option<ConnStream>,
@@ -28,7 +39,7 @@ impl Default for ConnFile {
 }
 
 impl ConnFile {
-    // A default constructor for ConnFile
+    /// A default constructor for ConnFile
     pub fn new() -> Self {
         ConnFile { fd: -1, file: None }
     }
@@ -62,7 +73,7 @@ impl ConnFile {
     }
 }
 
-// A Connection normally contains both in & outbound streams + a config
+/// A Connection normally contains both in & outbound streams + a generic config
 pub struct Connection<T> {
     pub inbound_conn: ConnFile,
     pub outbound_conn: ConnFile,
@@ -81,7 +92,7 @@ impl<T: Default> Default for Connection<T> {
 }
 
 impl<T> Connection<T> {
-    // A default constructor
+    /// A constructor that takes in the customized config
     pub fn new(config: T) -> Self {
         Connection {
             inbound_conn: ConnFile::new(),
@@ -90,6 +101,7 @@ impl<T> Connection<T> {
         }
     }
 
+    /// Setting the inbound connection for the WATM module, which is talking to the Host
     pub fn set_inbound(&mut self, fd: i32, stream: ConnStream) {
         if fd < 0 {
             eprintln!("[WASM] > ERROR: fd is negative");
@@ -105,6 +117,7 @@ impl<T> Connection<T> {
         self.inbound_conn.file = Some(stream);
     }
 
+    /// Setting the outbound connection for the WATM module, which is talking to the remote
     pub fn set_outbound(&mut self, fd: i32, stream: ConnStream) {
         if fd < 0 {
             eprintln!("[WASM] > ERROR: fd is negative");
@@ -119,20 +132,6 @@ impl<T> Connection<T> {
         self.outbound_conn.fd = fd;
         self.outbound_conn.file = Some(stream);
     }
-
-    // pub fn decoder_read_from_outbound<D: AsyncDecodeReader>(&mut self, decoder: &mut D, buf: &mut [u8]) -> Result<i64, anyhow::Error> {
-    //     debug!("[WASM] running in decoder_read_from_outbound");
-
-    //     // match self.outbound_conn.file.as_mut().unwrap() {
-    //     //     ConnStream::TcpStream(stream) => {
-    //     //         decoder.read_decrypted(stream);
-    //     //     },
-    //     //     ConnStream::File(stream) => {
-    //     //         decoder.read_decrypted(stream);
-    //     //     },
-    //     // }
-    //     Ok(decoder.poll_read_decrypted(self.outbound_conn.file.as_mut().unwrap().as_read(), buf)? as i64)
-    // }
 
     /// this _read function is triggered by the Host to read from the remote connection
     pub fn _read_from_outbound<D: Decoder>(
@@ -186,6 +185,7 @@ impl<T> Connection<T> {
         Ok(len_after_decoding as i64)
     }
 
+    /// this _write function is triggered by the Host to write to the remote connection
     pub fn _write_2_outbound<E: Encoder>(
         &mut self,
         encoder: &mut E,

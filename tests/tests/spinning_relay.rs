@@ -1,3 +1,6 @@
+//! This is the test file for testing the plain.wasm which is a v0_plus WATM module that has been tested with the Go engine.
+//! But with the Relay mode
+
 #![allow(dead_code)]
 
 use water::*;
@@ -12,6 +15,7 @@ use std::{
 
 use tempfile::tempdir;
 
+/// Testing the Relay mode
 #[test]
 fn test_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt().with_max_level(Level::INFO).init();
@@ -67,7 +71,7 @@ fn test_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut water_client = runtime::client::WATERClient::new(conf).unwrap();
 
-    water_client.relay().unwrap();
+    water_client.listen().unwrap();
 
     // connects to the relay, and the relay will connect to the listener
     let handle_local = std::thread::spawn(|| {
@@ -153,7 +157,7 @@ fn spin_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut water_client = runtime::client::WATERClient::new(conf).unwrap();
 
-    water_client.relay().unwrap();
+    water_client.listen().unwrap();
 
     water_client.associate().unwrap();
     water_client.cancel_with().unwrap();

@@ -1,7 +1,13 @@
+//! Global constants used by the WATER runtime.
+//!
+//! Most of these are function names exported by the WATM module,
+//!
+//! and some default path for the WATM module and the config file.
+
 #![allow(dead_code)]
 
 pub const WASM_PATH: &str = "./proxy.wasm";
-pub const CONFIG_WASM_PATH: &str = "./conf.json";
+pub const CONFIG_WASM_PATH: &str = "./config.json";
 
 pub const MAIN: &str = "main";
 pub const VERSION_FN: &str = "_water_version";

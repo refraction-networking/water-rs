@@ -1,20 +1,24 @@
+//! This file contains the v1_preview WATERListener implementation,
+//! it implements the WATERListenerTrait and WATERTransportTrait.
+
 use crate::runtime::{listener::WATERListenerTrait, transport::WATERTransportTrait, *};
 
 pub struct WATERListener<Host> {
-    // WASM functions for reading & writing
-
-    // the reader in WASM (read from net -- n2w)
-    // returns the number of bytes read
+    /// the reader in WASM (read from net -- n2w)
+    /// returns the number of bytes read
     pub reader: Func,
 
-    // the writer in WASM (write to net -- w2n)
-    // returns the number of bytes written
+    /// the writer in WASM (write to net -- w2n)
+    /// returns the number of bytes written
     pub writer: Func,
 
-    pub caller_reader: UnixStream, // the reader in Caller (read from WASM -- w2u)
-    pub caller_writer: UnixStream, // the writer in Caller (write to WASM -- u2w)
+    /// the reader in Caller (read from WASM -- w2u)
+    pub caller_reader: UnixStream,
+    /// the writer in Caller (write to WASM -- u2w)
+    pub caller_writer: UnixStream,
 
-    pub core: H2O<Host>, // core WASM runtime (engine, linker, instance, store, module)
+    /// core WASM runtime (engine, linker, instance, store, module)
+    pub core: H2O<Host>,
 }
 
 impl WATERTransportTrait for WATERListener<Host> {
@@ -119,8 +123,6 @@ impl WATERTransportTrait for WATERListener<Host> {
     }
 }
 
-// impl WATERTransportTraitV1 for WATERListener<Host> {}
-
 impl WATERListenerTrait for WATERListener<Host> {
     /// Listening at the addr:port with running the WASM listen function
     fn accept(&mut self, conf: &WATERConfig) -> Result<(), anyhow::Error> {
@@ -155,6 +157,7 @@ impl WATERListenerTrait for WATERListener<Host> {
 }
 
 impl WATERListener<Host> {
+    /// The constructor of WATERListener will create 2 pairs of UnixStream for communicating between WATM and Host
     pub fn init(_conf: &WATERConfig, core: H2O<Host>) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERListener v1_preview init...");
 

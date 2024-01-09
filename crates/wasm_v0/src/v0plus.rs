@@ -1,6 +1,9 @@
+//! v0plus APIsm, which supports async connections for WATM module
+
 use crate::{common::*, error};
 
-pub const VERSION: i32 = 0x00000000; // v0plus share the same version number with v0
+/// v0plus share the same version number with v0
+pub const VERSION: i32 = 0x00000000;
 
 pub struct Dialer {
     caller_conn: AsyncFdConn,
@@ -11,6 +14,7 @@ pub struct Listener {
     caller_conn: AsyncFdConn,
     source_conn: AsyncFdConn,
 }
+
 pub struct Relay {
     source_conn: AsyncFdConn,
     remote_conn: AsyncFdConn,

@@ -1,3 +1,11 @@
+//! This module is responsible for v1's dialing to remote server.
+//!
+//! It will create a TCP connection to the remote server by calling the
+//! Host exported helper function `connect_tcp`, and receives a file descriptor
+//! for the connection.
+//!
+//! Developers can use this lib to create a TCP connection to the remote server (ip:port from config).
+
 use super::*;
 
 use anyhow::{anyhow, Ok};

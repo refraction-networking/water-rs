@@ -1,13 +1,18 @@
+//! This is the core of the runtime, which is responsible for loading the WASM module and
+//! initializing the runtime. It also provides the interface for the host to interact with the runtime.
+
 use std::sync::Mutex;
 
 use crate::runtime::*;
 
+/// Host is storing the WasiCtx that we are using, and for the later features will also support the WasiThreadsCtx
 #[derive(Default, Clone)]
 pub struct Host {
     pub preview1_ctx: Option<wasmtime_wasi::WasiCtx>,
     pub wasi_threads: Option<Arc<WasiThreadsCtx<Host>>>,
 }
 
+/// This is the core of the runtime, which stores the necessary components for a WASM runtime and the version of the WATM module.
 #[derive(Clone)]
 pub struct H2O<Host> {
     pub version: Version,
@@ -20,7 +25,8 @@ pub struct H2O<Host> {
 }
 
 impl H2O<Host> {
-    pub fn init(conf: &WATERConfig) -> Result<Self, anyhow::Error> {
+    /// generate a new H2O core instance
+    pub fn init_core(conf: &WATERConfig) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERCore H2O initing...");
 
         let wasm_config = wasmtime::Config::new();
@@ -61,6 +67,7 @@ impl H2O<Host> {
             }
         });
 
+        // MUST have a version -- otherwise return error
         if version.is_none() {
             if let Some(e) = error_occured {
                 return Err(e);
@@ -68,90 +75,11 @@ impl H2O<Host> {
             return Err(anyhow::Error::msg("WATM module version not found"));
         }
 
-        Self::create_core(conf, linker, store, module, engine, version)
+        Self::setup_core(conf, linker, store, module, engine, version)
     }
 
-    pub fn create_core(
-        conf: &WATERConfig,
-        mut linker: Linker<Host>,
-        mut store: Store<Host>,
-        module: Module,
-        engine: Engine,
-        version: Option<Version>,
-    ) -> Result<Self, anyhow::Error> {
-        store.data_mut().preview1_ctx = Some(WasiCtxBuilder::new().inherit_stdio().build());
-
-        if store.data().preview1_ctx.is_none() {
-            return Err(anyhow::anyhow!(
-                "[HOST] WATERCore Failed to retrieve preview1_ctx from Host"
-            ));
-        }
-
-        wasmtime_wasi::add_to_linker(&mut linker, |h: &mut Host| h.preview1_ctx.as_mut().unwrap())?;
-
-        // initializing stuff for multithreading -- currently not used yet (v1+ feature)
-        #[cfg(feature = "multithread")]
-        {
-            store.data_mut().wasi_threads = Some(Arc::new(WasiThreadsCtx::new(
-                module.clone(),
-                Arc::new(linker.clone()),
-            )?));
-
-            wasmtime_wasi_threads::add_to_linker(&mut linker, &store, &module, |h: &mut Host| {
-                h.wasi_threads
-                    .as_ref()
-                    .context("Failed to get ref of wasi_threads from Host")?
-            })?;
-        }
-
-        // export functions -- version dependent -- has to be done before instantiate
-        match &version {
-            Some(Version::V0(ref config)) => match config {
-                Some(v0_conf) => {
-                    v0::funcs::export_tcp_connect(&mut linker, Arc::clone(v0_conf))?;
-                    v0::funcs::export_accept(&mut linker, Arc::clone(v0_conf))?;
-                    v0::funcs::export_defer(&mut linker, Arc::clone(v0_conf))?;
-                }
-                None => {
-                    return Err(anyhow::anyhow!(
-                        "v0_conf wasn't initialized / setup correctly"
-                    ))?;
-                }
-            },
-            Some(Version::V1) => {
-                v1::funcs::export_tcp_connect(&mut linker)?;
-                v1::funcs::export_tcplistener_create(&mut linker)?;
-            }
-            _ => {
-                unimplemented!("This version is not supported yet")
-            } // add export funcs for other versions here
-        }
-
-        // export functions -- version independent
-        {
-            version_common::funcs::export_config(&mut linker, conf.config_wasm.clone())?;
-        }
-
-        let instance = linker.instantiate(&mut store, &module)?;
-
-        Ok(H2O {
-            version: match version {
-                Some(v) => v,
-                None => {
-                    return Err(anyhow::anyhow!("Version is None"));
-                }
-            },
-
-            engine,
-            linker,
-            instance,
-            store: Arc::new(Mutex::new(store)),
-            module,
-        })
-    }
-
-    // This function is for migrating the v0 core for listener and relay
-    // to handle every new connection is creating a new separate core (as v0 spec)
+    /// This function is for migrating the v0 core for listener and relay
+    /// to handle every new connection will create a new separate core (as v0 spec)
     pub fn v0_migrate_core(conf: &WATERConfig, core: &H2O<Host>) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERCore H2O v0_migrating...");
 
@@ -198,7 +126,91 @@ impl H2O<Host> {
         let host = Host::default();
         let store = Store::new(&engine, host);
 
-        Self::create_core(conf, linker, store, module, engine, Some(version))
+        Self::setup_core(conf, linker, store, module, engine, Some(version))
+    }
+
+    /// called by init_core() or v0_migrate_core() to setup the core (reduce code duplication)
+    pub fn setup_core(
+        conf: &WATERConfig,
+        mut linker: Linker<Host>,
+        mut store: Store<Host>,
+        module: Module,
+        engine: Engine,
+        version: Option<Version>,
+    ) -> Result<Self, anyhow::Error> {
+        store.data_mut().preview1_ctx = Some(WasiCtxBuilder::new().inherit_stdio().build());
+
+        if store.data().preview1_ctx.is_none() {
+            return Err(anyhow::anyhow!(
+                "[HOST] WATERCore Failed to retrieve preview1_ctx from Host"
+            ));
+        }
+
+        wasmtime_wasi::add_to_linker(&mut linker, |h: &mut Host| h.preview1_ctx.as_mut().unwrap())?;
+
+        /// initialization for WASI-multithread -- currently not completed / used (v1+ feature)
+        #[cfg(feature = "multithread")]
+        {
+            store.data_mut().wasi_threads = Some(Arc::new(WasiThreadsCtx::new(
+                module.clone(),
+                Arc::new(linker.clone()),
+            )?));
+
+            wasmtime_wasi_threads::add_to_linker(&mut linker, &store, &module, |h: &mut Host| {
+                h.wasi_threads
+                    .as_ref()
+                    .context("Failed to get ref of wasi_threads from Host")?
+            })?;
+        }
+
+        // export functions -- version dependent -- has to be done before instantiate
+        match &version {
+            // V0 export functions
+            Some(Version::V0(ref config)) => match config {
+                Some(v0_conf) => {
+                    v0::funcs::export_tcp_connect(&mut linker, Arc::clone(v0_conf))?;
+                    v0::funcs::export_accept(&mut linker, Arc::clone(v0_conf))?;
+                    v0::funcs::export_defer(&mut linker, Arc::clone(v0_conf))?;
+                }
+                None => {
+                    return Err(anyhow::anyhow!(
+                        "v0_conf wasn't initialized / setup correctly"
+                    ))?;
+                }
+            },
+
+            // V1 export functions
+            Some(Version::V1) => {
+                v1::funcs::export_tcp_connect(&mut linker)?;
+                v1::funcs::export_tcplistener_create(&mut linker)?;
+            }
+            // add export funcs for other versions here
+            _ => {
+                unimplemented!("This version is not supported yet")
+            }
+        }
+
+        // export functions -- version independent
+        {
+            version_common::funcs::export_config(&mut linker, conf.config_wasm.clone())?;
+        }
+
+        let instance = linker.instantiate(&mut store, &module)?;
+
+        Ok(H2O {
+            version: match version {
+                Some(v) => v,
+                None => {
+                    return Err(anyhow::anyhow!("Version is None"));
+                }
+            },
+
+            engine,
+            linker,
+            instance,
+            store: Arc::new(Mutex::new(store)),
+            module,
+        })
     }
 
     pub fn _prepare(&mut self, conf: &WATERConfig) -> Result<(), anyhow::Error> {
@@ -207,6 +219,7 @@ impl H2O<Host> {
         Ok(())
     }
 
+    /// This function is called when the host wants to call _init() in WASM
     pub fn _init(&mut self, debug: bool) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERCore calling _init from WASM...");
 
@@ -233,6 +246,9 @@ impl H2O<Host> {
         Ok(())
     }
 
+    /// This function is called when the host the WATM module to process the configurations,
+    /// currently used by v1_preview, will change the behavior later to be
+    /// a exported function from Host to WASM to let the WASM module to pull the config.
     pub fn _process_config(&mut self, config: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERCore calling _process_config from WASM...");
 
