@@ -1,7 +1,11 @@
+//! Exported functions implementation for v0 WATM module from the Host
+
 use crate::runtime::v0::config::V0Config;
 use crate::runtime::*;
 use std::sync::{Arc, Mutex};
 
+/// This function is exporting the `host_dial() -> i32`
+/// to the WATM where it is used to create a tcp connection and returns the fd of the connection used by Dialer & Relay.
 pub fn export_tcp_connect(
     linker: &mut Linker<Host>,
     config: Arc<Mutex<V0Config>>,
@@ -40,6 +44,8 @@ pub fn export_tcp_connect(
     Ok(())
 }
 
+/// This function is exporting the `host_accept() -> i32`
+/// to the WATM where it is used to accept a incoming connection from the listener and returns the fd of the connection used by Listener & Relay.
 pub fn export_accept(
     linker: &mut Linker<Host>,
     config: Arc<Mutex<V0Config>>,
@@ -78,7 +84,7 @@ pub fn export_accept(
     Ok(())
 }
 
-// TODO: implement this
+/// This function is exporting the `host_defer()` to the WATM where it is used to close the connection.
 pub fn export_defer(
     linker: &mut Linker<Host>,
     config: Arc<Mutex<V0Config>>,

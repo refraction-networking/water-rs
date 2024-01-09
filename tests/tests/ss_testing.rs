@@ -1,14 +1,11 @@
+//! This is the test file for testing the ss_client_wasm.wasm which is a v1_preview ShadowSocks WATM module,
+//! program procedures here can also be treat as examples of using the WATER client, with the ShadowSocks protocol WATM.
+
 #![allow(dead_code)]
 
-use water::*;
-
-// use rand;
-// use pprof::protos::Message;
-// use tracing::info;
-
-use tracing::Level;
-
 use tempfile::tempdir;
+use tracing::Level;
+use water::*;
 
 use std::thread;
 use std::{
@@ -116,15 +113,16 @@ impl Socks5TestServer {
 // }
 // "#;
 
+/// A test for a normal Shadowsocks client
 #[tokio::test]
 async fn wasm_managed_shadowsocks_async() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt().with_max_level(Level::INFO).init();
 
     // ==== setup official Shadowsocks server ====
-    const SERVER_ADDR: &str = "127.0.0.1:8388";
+    const SERVER_ADDR: &str = "127.0.0.1:8088";
     const LOCAL_ADDR: &str = "127.0.0.1:8081";
 
-    const PASSWORD: &str = "Test!23";
+    const PASSWORD: &str = "WATERisAwesome!23";
     const METHOD: CipherKind = CipherKind::CHACHA20_POLY1305;
 
     let cfg_str = r#"
@@ -133,6 +131,7 @@ async fn wasm_managed_shadowsocks_async() -> Result<(), Box<dyn std::error::Erro
         "remote_port": 8088,
         "local_address": "127.0.0.1",
         "local_port": 8080,
+        "password": "WATERisAwesome!23",
         "bypass": false
     }
 	"#;
@@ -193,6 +192,7 @@ async fn wasm_managed_shadowsocks_async() -> Result<(), Box<dyn std::error::Erro
     Ok(())
 }
 
+/// A test for a normal Shadowsocks client but set bypass to true (which means it won't go through a Shadowsocks server act as a plain proxy)
 #[tokio::test]
 async fn wasm_managed_shadowsocks_bypass_async() -> Result<(), Box<dyn std::error::Error>> {
     let cfg_str = r#"
@@ -201,6 +201,7 @@ async fn wasm_managed_shadowsocks_bypass_async() -> Result<(), Box<dyn std::erro
 		"remote_port": 10085,
 		"local_address": "127.0.0.1",
 		"local_port": 10086,
+        "password": "Test!23",
         "bypass": true
 	}
 	"#;
@@ -234,8 +235,14 @@ async fn wasm_managed_shadowsocks_bypass_async() -> Result<(), Box<dyn std::erro
 
     // ==== test WASM Shadowsocks client ====
     // currently only support connect by ip,
-    // this is the ip of detectportal.firefox.com
-    let ip: IpAddr = "143.244.220.150".parse().unwrap();
+    // get the ip of detectportal.firefox.com
+
+    let mut addrs = "detectportal.firefox.com:80".to_socket_addrs()?;
+    let ip = addrs
+        .find(|addr| addr.is_ipv4())
+        .ok_or("No IPv4 address found for detectportal.firefox.com")?;
+
+    let ip: IpAddr = ip.ip().to_string().parse().unwrap();
     let port = 80;
 
     let mut c = Socks5TcpClient::connect(

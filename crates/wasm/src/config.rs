@@ -1,6 +1,11 @@
+//! This module contains the default config struct for the WATM module
+//!
+//! The config should be read from a .json file by the WATM module and setup the
+//! corresponding connection addresses and ports
+
 use super::*;
 
-// A Config currently contains the local + remote ip & port
+/// A Config currently contains the local + remote ip & port + bypass flag
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub remote_address: String,
@@ -16,7 +21,7 @@ impl Default for Config {
     }
 }
 
-// implement a constructor for the config
+/// implement a constructor for the config
 impl Config {
     pub fn new() -> Self {
         Config {
@@ -29,8 +34,9 @@ impl Config {
     }
 }
 
-// ============ Some implementation for V1 ============
-// A config struct that shares between your host & wasm to establish a connection
+// ============ Below are some implementations for V1 ============
+
+/// A config struct that shares between your host & wasm to establish a connection
 // #[cfg(feature = "v1")]
 #[derive(Serialize, Deserialize)]
 pub struct StreamConfigV1 {

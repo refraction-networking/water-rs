@@ -1,6 +1,9 @@
+//! This file contains the config related function that will be the same across all versions of WATM
+
 use crate::runtime::*;
 
-// exportint a function for WASM to get CONFIG file
+/// exportint a function `pull_config() -> i32` that will be used
+/// for WATM to get the config file from the host
 pub fn export_config(linker: &mut Linker<Host>, config_file: String) -> Result<(), anyhow::Error> {
     linker
         .func_wrap(

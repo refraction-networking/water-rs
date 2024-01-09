@@ -1,15 +1,15 @@
+//! Logic for packaging trait
+
 use super::*;
 
 use tokio::io::AsyncWrite;
 
-// Developer Guide: Logic for packaging
-
-// A trait for a encoder, developers should implement this trait and pass it to _write_to_outbound
+/// A trait for a encoder, developers should implement this trait and pass it to _write_to_outbound
 pub trait Encoder {
     fn encode(&self, input: &[u8], output: &mut [u8]) -> Result<u32, anyhow::Error>;
 }
 
-// A default encoder that does just copy + paste
+/// A default encoder that does just copy + paste
 pub struct DefaultEncoder;
 
 impl Encoder for DefaultEncoder {

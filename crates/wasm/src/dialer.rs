@@ -1,9 +1,17 @@
+//! This module is responsible for v1's dialing to remote server.
+//!
+//! It will create a TCP connection to the remote server by calling the
+//! Host exported helper function `connect_tcp`, and receives a file descriptor
+//! for the connection.
+//!
+//! Developers can use this lib to create a TCP connection to the remote server (ip:port from config).
+
 use super::*;
 
 use anyhow::{anyhow, Ok};
 
 pub struct Dialer {
-    pub file_conn: Connection,
+    pub file_conn: Connection<Config>,
     pub config: Config,
 }
 
@@ -16,7 +24,7 @@ impl Default for Dialer {
 impl Dialer {
     pub fn new() -> Self {
         Dialer {
-            file_conn: Connection::new(),
+            file_conn: Connection::default(),
             config: Config::new(),
         }
     }
@@ -24,7 +32,6 @@ impl Dialer {
     pub fn dial(&mut self) -> Result<i32, anyhow::Error> {
         info!("[WASM] running in dial func...");
 
-        // FIXME: hardcoded the filename for now, make it a config later
         let fd: i32 = self.tcp_connect()?;
 
         if fd < 0 {

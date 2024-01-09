@@ -1,3 +1,5 @@
+//! This module contains the runtime implementation of using WASM, including the host, core, and related interaction operations.
+
 // =================== MODULES ===================
 pub mod client;
 pub mod core;

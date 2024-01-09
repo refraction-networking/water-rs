@@ -1,3 +1,5 @@
+//! Stream trait for WATER runtime.
+
 use crate::runtime::{transport::WATERTransportTrait, *};
 
 pub trait WATERStreamTrait: WATERTransportTrait {

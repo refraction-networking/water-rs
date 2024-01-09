@@ -1,13 +1,17 @@
+//! This file contains the v0_plus WATERListener implementation,
+//! it implements the WATERListenerTrait and WATERTransportTrait.
+
 use crate::runtime::{listener::WATERListenerTrait, transport::WATERTransportTrait, *};
 
 pub struct WATERListener<Host> {
-    pub caller_io: Option<UnixStream>, // the pipe for communcating between Host and WASM
-    pub cancel_io: Option<UnixStream>, // the UnixStream side for communcating between Host and WASM
+    /// the pipe for communcating between Host and WASM
+    pub caller_io: Option<UnixStream>,
+    /// the UnixStream side for communcating between Host and WASM
+    pub cancel_io: Option<UnixStream>,
 
-    pub core: H2O<Host>, // core WASM runtime (engine, linker, instance, store, module)
+    /// core WASM runtime (engine, linker, instance, store, module)
+    pub core: H2O<Host>,
 }
-
-// impl WATERTransportTrait for WATERListener<Host> {}
 
 impl WATERTransportTrait for WATERListener<Host> {
     fn get_caller_io(&mut self) -> &mut Option<UnixStream> {
@@ -32,7 +36,7 @@ impl WATERTransportTrait for WATERListener<Host> {
 }
 
 impl WATERListenerTrait for WATERListener<Host> {
-    /// Connect to the target address with running the WASM connect function
+    /// Creates a listener for the WATM module, and stores the fds in the core's version info
     fn listen(&mut self, _conf: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERListener v0 create listener...");
 
@@ -55,6 +59,7 @@ impl WATERListenerTrait for WATERListener<Host> {
         Ok(())
     }
 
+    /// Accept a connection from the listener with running the WATM's accept function and binding the caller_io with Host.
     fn accept(&mut self, _conf: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERListener v0 accepting...");
 
@@ -130,6 +135,7 @@ impl WATERListener<Host> {
         Ok(runtime)
     }
 
+    /// Migrates the listener from one WATM instance to another, where every newly accept()'ed connection will be handled by a separate WATM instance.
     pub fn migrate_listener(_conf: &WATERConfig, core: &H2O<Host>) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERListener v0 migrating listener...");
 
