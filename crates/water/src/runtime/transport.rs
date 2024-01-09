@@ -16,9 +16,7 @@ pub trait WATERTransportTrait: Send {
         match caller_io {
             Some(ref mut caller_io) => match caller_io.read(buf) {
                 Ok(n) if n > 0 => Ok(n as i64),
-                Ok(_) => {
-                    Err(anyhow::Error::msg("Stream closed or read 0 bytes"))
-                },
+                Ok(_) => Err(anyhow::Error::msg("Stream closed or read 0 bytes")),
                 Err(e) => Err(anyhow::Error::msg(format!(
                     "failed to read from caller_reader: {}",
                     e

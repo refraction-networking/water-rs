@@ -85,7 +85,7 @@ pub fn execute(_conf: WATERConfig) -> Result<(), anyhow::Error> {
                     println!("Error: {}", res.unwrap_err());
                 }
             }
-            
+
             match handle_water.join().unwrap() {
                 Ok(_) => {}
                 Err(e) => {
@@ -95,7 +95,7 @@ pub fn execute(_conf: WATERConfig) -> Result<(), anyhow::Error> {
             };
         }
         WaterBinType::Relay => {
-            water_client.relay().unwrap();
+            water_client.listen().unwrap();
             water_client.associate().unwrap();
             water_client.cancel_with().unwrap();
 
@@ -115,14 +115,14 @@ pub fn execute(_conf: WATERConfig) -> Result<(), anyhow::Error> {
 
                 let mut buf = vec![0; 1024];
                 let res = water_client.read(&mut buf);
-                
+
                 if res.is_ok() {
                     println!("Received: {}", String::from_utf8_lossy(&buf));
                 } else {
                     println!("Error: {}", res.unwrap_err());
                 }
             }
-            
+
             match handle_water.join().unwrap() {
                 Ok(_) => {}
                 Err(e) => {
