@@ -1,3 +1,6 @@
+//! This is the test file for testing the echo_client.wasm which is a plain v1_preview WATM module,
+//! program procedures can also be treat as examples of using the WATER client.
+
 use water::*;
 
 use std::{

@@ -1,14 +1,11 @@
+//! This is the test file for testing the ss_client_wasm.wasm which is a v1_preview ShadowSocks WATM module,
+//! program procedures here can also be treat as examples of using the WATER client, with the ShadowSocks protocol WATM.
+
 #![allow(dead_code)]
 
-use water::*;
-
-// use rand;
-// use pprof::protos::Message;
-// use tracing::info;
-
-use tracing::Level;
-
 use tempfile::tempdir;
+use tracing::Level;
+use water::*;
 
 use std::thread;
 use std::{
@@ -116,6 +113,7 @@ impl Socks5TestServer {
 // }
 // "#;
 
+/// A test for a normal Shadowsocks client
 #[tokio::test]
 async fn wasm_managed_shadowsocks_async() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt().with_max_level(Level::INFO).init();
@@ -194,6 +192,7 @@ async fn wasm_managed_shadowsocks_async() -> Result<(), Box<dyn std::error::Erro
     Ok(())
 }
 
+/// A test for a normal Shadowsocks client but set bypass to true (which means it won't go through a Shadowsocks server act as a plain proxy)
 #[tokio::test]
 async fn wasm_managed_shadowsocks_bypass_async() -> Result<(), Box<dyn std::error::Error>> {
     let cfg_str = r#"
