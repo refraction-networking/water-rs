@@ -1,10 +1,16 @@
+//! This file contains the v0_plus WATERRelay implementation,
+//! it implements the WATERRelayTrait and WATERTransportTrait.
+
 use crate::runtime::{relay::WATERRelayTrait, transport::WATERTransportTrait, *};
 
 pub struct WATERRelay<Host> {
-    pub caller_io: Option<UnixStream>, // the pipe for communcating between Host and WASM
-    pub cancel_io: Option<UnixStream>, // the UnixStream side for communcating between Host and WASM
+    /// the pipe for communcating between Host and WASM
+    pub caller_io: Option<UnixStream>,
+    /// the UnixStream side for communcating between Host and WASM
+    pub cancel_io: Option<UnixStream>,
 
-    pub core: H2O<Host>, // core WASM runtime (engine, linker, instance, store, module)
+    /// core WASM runtime (engine, linker, instance, store, module)
+    pub core: H2O<Host>,
 }
 
 impl WATERTransportTrait for WATERRelay<Host> {
@@ -30,7 +36,7 @@ impl WATERTransportTrait for WATERRelay<Host> {
 }
 
 impl WATERRelayTrait for WATERRelay<Host> {
-    /// Connect to the target address with running the WASM connect function
+    /// Associate to the target address with running the WASM associate function
     fn associate(&mut self, _conf: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERRelay v0 associating...");
 
@@ -72,8 +78,9 @@ impl WATERRelayTrait for WATERRelay<Host> {
         Ok(())
     }
 
-    fn relay(&mut self, _conf: &WATERConfig) -> Result<(), anyhow::Error> {
-        info!("[HOST] WATERRelay v0 relaying...");
+    /// Creates a listener for the WATM module, and stores the fds in the core's version info
+    fn listen(&mut self, _conf: &WATERConfig) -> Result<(), anyhow::Error> {
+        info!("[HOST] WATERRelay v0 create listener...");
 
         // create listener
         if let Version::V0(v0_conf) = &mut self.core.version {
@@ -109,6 +116,7 @@ impl WATERRelay<Host> {
         Ok(runtime)
     }
 
+    /// Migrates the listener in Relay from one WATM instance to another, where every newly accept()'ed connection will be handled by a separate WATM instance.
     pub fn migrate_listener(_conf: &WATERConfig, core: &H2O<Host>) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERelay v0 migrating listener...");
 

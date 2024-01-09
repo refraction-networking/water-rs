@@ -67,7 +67,7 @@ fn test_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut water_client = runtime::client::WATERClient::new(conf).unwrap();
 
-    water_client.relay().unwrap();
+    water_client.listen().unwrap();
 
     // connects to the relay, and the relay will connect to the listener
     let handle_local = std::thread::spawn(|| {
@@ -153,7 +153,7 @@ fn spin_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut water_client = runtime::client::WATERClient::new(conf).unwrap();
 
-    water_client.relay().unwrap();
+    water_client.listen().unwrap();
 
     water_client.associate().unwrap();
     water_client.cancel_with().unwrap();

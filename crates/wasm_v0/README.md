@@ -1,6 +1,4 @@
-# WebAssembly Transport Module (WATM) APIs -- `water_wasm`
-
-For latest API docs see [here](https://app.gitbook.com/o/KHlQypYtIQKkb8YeZ6Hx/s/lVX5MqollomuX6vW80T6/wasm-and-wasi-apis).
+# WebAssembly Transport Module (WATM) APIs -- `water_wasm-v0`
 
 ---
 A set of Universal APIs in WASM when integrate with Rust / Go Host

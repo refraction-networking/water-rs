@@ -1,11 +1,11 @@
 //! This is the core of the runtime, which is responsible for loading the WASM module and
-//! initializing the runtime. It also provides the interface for the host to interact with the
-//! runtime.
+//! initializing the runtime. It also provides the interface for the host to interact with the runtime.
 
 use std::sync::Mutex;
 
 use crate::runtime::*;
 
+/// Host is storing the WasiCtx that we are using, and for the later features will also support the WasiThreadsCtx
 #[derive(Default, Clone)]
 pub struct Host {
     pub preview1_ctx: Option<wasmtime_wasi::WasiCtx>,
@@ -246,9 +246,9 @@ impl H2O<Host> {
         Ok(())
     }
 
-    /// This function is called when the host wants to configure the WASM module
-    /// Currently used by v1_preview, v0 is not using configurations yet
-    /// Will change the behavior later to be a exported function from Host to WASM to let the WASM module to pull the config
+    /// This function is called when the host the WATM module to process the configurations,
+    /// currently used by v1_preview, will change the behavior later to be
+    /// a exported function from Host to WASM to let the WASM module to pull the config.
     pub fn _process_config(&mut self, config: &WATERConfig) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERCore calling _process_config from WASM...");
 

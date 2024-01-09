@@ -1,6 +1,5 @@
-//! Transport trait for WASM runtime
-//!
-//!
+//! Transport trait for WATER runtime that will be implemented by each version and all roles of WATM,
+//! It is for the WATM module to communicate with the Host via UnixStream.
 
 use std::thread::JoinHandle;
 

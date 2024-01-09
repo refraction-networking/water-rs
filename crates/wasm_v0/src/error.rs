@@ -1,16 +1,26 @@
-// Error is a enum in i32
+//! Error codes for the WATM module
+
+/// Error is a enum in i32
 #[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Error {
     None = 0,
-    Unknown = -1,         // general error
-    InvalidArgument = -2, // invalid argument supplied to func call
-    InvalidConfig = -3,   // config file provided is invalid
-    InvalidFd = -4,       // invalid file descriptor provided
-    InvalidFunction = -5, // invalid function called
-    DoubleInit = -6,      // initializing twice
-    FailedIO = -7,        // Failing an I/O operation
-    NotInitialized = -8,  // not initialized
+    /// general error
+    Unknown = -1,
+    /// invalid argument supplied to func call
+    InvalidArgument = -2,
+    /// config file provided is invalid
+    InvalidConfig = -3,
+    /// invalid file descriptor provided
+    InvalidFd = -4,
+    /// invalid function called
+    InvalidFunction = -5,
+    /// initializing twice
+    DoubleInit = -6,
+    /// Failing an I/O operation
+    FailedIO = -7,
+    /// not initialized
+    NotInitialized = -8,
 }
 
 impl Error {

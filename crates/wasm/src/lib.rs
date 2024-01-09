@@ -1,6 +1,4 @@
-//! lib.rs
-//! export all modules
-//!
+//! This lib is for a demo and ease of developing the WATM module
 
 pub mod config;
 pub mod connections;
@@ -36,13 +34,15 @@ use tracing::{debug, info};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-// TODO: move these to speicific implementations, shouldn't be in the crate lib
-
 // =================== WASM Imports =====================
 extern "C" {
-    /// These functions are imported from the host to the WASM module.
-    /// host must provide these functions to the WASM module.
-    // #[link_name = "create-listen"]
+    /// These functions are exported from the host to the WATM module,
+    /// which means host must provide these functions to the WATM module.
+    ///
+    /// create a listener (specified by returned fd) -- pass ptr + size for the ip:port struct sharing to Host
+    // #[link_name = "create_listen"]
     pub fn create_listen(ptr: u32, size: u32) -> i32;
+
+    /// create a TcpStream connection (specified by returned fd) -- pass ptr + size for the ip:port struct sharing to Host
     pub fn connect_tcp(ptr: u32, size: u32) -> i32;
 }

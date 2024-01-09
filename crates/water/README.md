@@ -1,206 +1,154 @@
 # Rust APIs -- `water`
 
-For the latest API docs see: [here](https://app.gitbook.com/o/KHlQypYtIQKkb8YeZ6Hx/s/lVX5MqollomuX6vW80T6/rust-apis).
-
----
+Library docs will be availale soon on `docs.rs`, for now you can run `cargo doc --no-deps --open` to generate the docs locally.
 
 ## External (Caller Facing)
 
 <figure><img src="../../.github/assets/water_rust_lib_draft1.png" alt=""><figcaption><p>design diagram draft1</p></figcaption></figure>
 
-#### Sync:
-
-<pre class="language-rust"><code class="lang-rust"><strong>pub struct WATERClient {
-</strong>    pub config: Config,
-    debug: bool,
-}
-
-impl WATERClient {
-    pub fn new(conf: Config) -> Result&#x3C;Self, anyhow::Error> 
-    pub fn set_debug(&#x26;mut self, debug: bool)
-    
-    // create a WATERStream which is a context wrapper for WASM instance
-    // and (maybe later?) start listening to inbound connections 
-    pub fn connect(&#x26;mut self, addr: &#x26;str) -> Result&#x3C;WATERStream&#x3C;Host>, anyhow::Error>
-}
-
-pub trait WATERStreamOps {
-    fn user_write_done(&#x26;mut self, n: i32) -> Result&#x3C;i32, anyhow::Error>;
-    fn user_will_read(&#x26;mut self) -> Result&#x3C;i32, anyhow::Error>;
-}
--
-pub struct WATERStream {
-    // wasmtime runtime essentials
-    pub instance: wasmtime::instance,
-    ...
-      
-    // NOTE: Maybe is a better Rust idiom to put these into a trait instead of here
-    //user_write_done: Box&#x3C;dyn Fn(i32) -> Result&#x3C;i32, anyhow::Error>>
-}
-
-// Should it to be called as WATERStream 
-impl WATERStream {
-    pub fn read(&#x26;self, buf: &#x26;mut [u8]) -> Result&#x3C;u32, anyhow::Error>;
-    pub fn write(&#x26;self, buf: &#x26;mut [u8]) -> Result&#x3C;u32, anyhow::Error>;
-    
-    pub fn set_nonblocking(&#x26;self, nonblocking: bool)    
-}
-
-impl WATERStreamOps for WATERStream { /*...*/ }
-
-impl Read for &#x26;WATERStream {
-    pub fn read(&#x26;mut self, buf: &#x26;mut [u8]) -> Result&#x3C;u32>
-}
-
-impl Write for &#x26;WATERStream {
-    pub fn write(&#x26;mut self, buf: &#x26;[u8]) -> Result&#x3C;u32>
-    pub fn flush(&#x26;mut self) -> Result&#x3C;()>
-}
-</code></pre>
-
-#### Async + Multiple connections
-
-```rust
-impl AsyncRead for &WATERStream {
-    pub fn poll_read(&mut self, buf: &mut [u8]) -> Result<u32>
-}
-
-impl AsyncWrite for &WATERStream {
-    pub fn poll_write(&mut self, buf: &[u8]) -> Result<u32>
-    pub fn poll_flush(&mut self) -> Result<()>
-}
-
-pub fn split(stream: &mut WATERStream) -> (ReadHalf<'_>, WriteHalf<'_>)
-```
-
-
-
-
-
-
-
-Draft:
-
-<pre class="language-rust"><code class="lang-rust">/// Match TcpListener idioms
-pub struct WATERListener {
-    // wasmtime runtime essentials
-    pub instance: wasmtime::instance,
-    ...
-}
-
-impl WATERListener {
-    // convention for listen
-    pub fn bind() 
-    
-    pub fn incoming()
-}
-
-
-type NetStream = u32;
-
-// Define DialFn and DialFnLocal
-type DialFn = fn(&#x26;str) -> Result&#x3C;NetStream>;
-type DialFnLocal = fn(&#x26;str) -> Result&#x3C;NetStream>;
-
-pub fn dial(addr: &#x26;str) -> Result&#x3C;NetStream> {}
-
-pub fn dial_context(addr: &#x26;str) -> Result&#x3C;NetStream> {}
-
-struct Config {
-    water_path: String,
-    // In Rust, we'll use Cursor from the standard library as an equivalent to Go's bytes.Reader
-    water_bin: Cursor&#x3C;Vec&#x3C;u8>>,
-    water_config_blob: Vec&#x3C;u8>,
-    features: Vec&#x3C;String>,
-    
-    // The entry point of WASM module after initializations
-    entry_fn: String,
-    
-    // To be exported to WASM for dial with a specific protocol
-    dial_fns: HashMap&#x3C;String, DialFn>,
-<strong>}
-</strong>
-pub struct Dialer {
-    config: Config,
-    internal_dial_fn: DialFn,
-    internal_dial_fn_local: DialFnLocal,
-}
-
-impl Dialer {
-    pub fn dial(&#x26;self, network: &#x26;str, addr: &#x26;str) -> Result&#x3C;NetStream> {}
-    pub fn dial_context(&#x26;self, addr: &#x26;str) -> Result&#x3C;NetStream> {}
-}
-</code></pre>
-
-## Internal (WASM Facing)
-
-
-
-#### Multiple connection (Listener)
-
-```
-```
-
 ## Examples
 
 <details>
 
-<summary>Example 1 simple HTTP client</summary>
+<summary>Example 1: v0 simple tcp connection sending plain text</summary>
 
 ```rust
-/// Minimal example
-let t = TcpStream::New("127.0.0.1:443")
+// Some config.json file with the following configs
+// 	{
+// 		"remote_address": "127.0.0.1",
+// 		"remote_port": 8080,
+// 		"local_address": "127.0.0.1",
+// 		"local_port": 8088,
+//      "bypass": false
+// 	}
+    
+// construct the config
+let conf = config::WATERConfig::init(
+    String::from("./test_wasm/plain.wasm"),
+    String::from("_water_worker"),
+    String::from("above_config.json"),
+    config::WaterBinType::Dial,
+    true,
+)
+.unwrap();
 
-/// With a normal Rust program - how to do HTTP request low-level
-let water_con = WATERStreamConnector::init(Config { water_path: "./proxy.wasm" });
+// creating the WATER client
+let mut water_client = runtime::client::WATERClient::new(conf).unwrap();
 
-let mut stream: WATERStream = water_con.connect("127.0.0.1:443");
-let req = "GET ...\r\n\r\n";
+// connecting to the remote_address:remote_port
+water_client.connect().unwrap();
 
-stream.write_all(req.as_bytes());
+// setup the cancel pipe for exiting
+water_client.cancel_with().unwrap();
 
-let mut response = String::new();
-stream.read_to_string(&mut response);
+// run the worker in WATM which is running in a separate thread
+let handle_water = water_client.run_worker().unwrap();
 
-/// Some higher-level possible ways for WATER
-let water_path = "./proxy.wasm";
-let water = WATERStream::new(Config { water_path: water_path } );
+let test_message = b"hello";
 
-let req = "GET ...";
-// OR
-let req = tool_generate_http_packet.generate("www.twitter.com")
-                .insert_header((...));
+// sending to the remote end with the packaging logic (here is plain, depends on the WATM)
+water_client.write(test_message).unwrap();
 
-let res = water.send()?;
+// reading from the remote end with the unpackaging logic (here is plain, depends on the WATM)
+let mut buf = vec![0; 32];
+let res = water_client.read(&mut buf);
+
+// close the connection
+water_client.cancel().unwrap();
+
+// clean things up and wait for the thread to join
+drop(file);
+dir.close()?;
+handle.join().unwrap();
+match handle_water.join().unwrap() {
+    Ok(_) => {}
+    Err(e) => {
+        eprintln!("Running _water_worker ERROR: {}", e);
+        return Err(Box::new(Error::new(
+            ErrorKind::Other,
+            "Failed to join _water_worker thread",
+        )));
+    }
+};
 ```
-
 </details>
 
 <details>
 
-<summary>Example 2 simple proxy</summary>
+<summary>Example 2: v1 shadowsocks</summary>
 
 ```rust
+// first setup the official shadowsocks_server end on port 8088
+const SERVER_ADDR: &str = "127.0.0.1:8088";
+const LOCAL_ADDR: &str = "127.0.0.1:8081";
+
+// have the shared password
+const PASSWORD: &str = "WATERisAwesome!23";
+
+// using CHACHA20 as the cipher method
+const METHOD: CipherKind = CipherKind::CHACHA20_POLY1305;
+
+let svr = Socks5TestServer::new(SERVER_ADDR, LOCAL_ADDR, PASSWORD, METHOD, false);
+svr.run().await;
+
+// Some config.json file with the following configs
+// {
+//     "remote_address": "127.0.0.1",
+//     "remote_port": 8088,
+//     "local_address": "127.0.0.1",
+//     "local_port": 8080,
+//     "password": "WATERisAwesome!23",
+//     "bypass": false
+// }
+
+// construct the config
+let conf = config::WATERConfig::init(
+    String::from("./test_wasm/ss_client_wasm.wasm"),
+    String::from("v1_listen"),
+    String::from("above_config.json"),
+    // Runner type is currently for the relay implementation for v1
+    config::WaterBinType::Runner,
+    true,
+)
+.unwrap();
+
+// creating the WATER client
+let mut water_client = runtime::client::WATERClient::new(conf).unwrap();
+
+// spawn a thread to run the Shadowsocks client WATM
+thread::spawn(move || {
+    water_client.execute().unwrap();
+});
+
+// creating the SocketAddr for ss_client
+let wasm_ss_client_addr = SocketAddr::new("127.0.0.1".parse().unwrap(), 8080);
+
+// Give some time for the WASM client to start
+thread::sleep(Duration::from_millis(100));
+
+// test the Shadowsocks client WATM
+let mut c = Socks5TcpClient::connect(
+    Address::DomainNameAddress("detectportal.firefox.com".to_owned(), 80),
+    wasm_ss_client_addr,
+)
+.await
+.unwrap();
+
+let req = b"GET /success.txt HTTP/1.0\r\nHost: detectportal.firefox.com\r\nAccept: */*\r\n\r\n";
+c.write_all(req).await.unwrap();
+c.flush().await.unwrap();
+
+let mut r = BufReader::new(c);
+
+let mut buf = Vec::new();
+r.read_until(b'\n', &mut buf).await.unwrap();
+
+let http_status = b"HTTP/1.0 200 OK\r\n";
+assert!(buf.starts_with(http_status));
 ```
-
 </details>
 
-<details>
-
-<summary>Example 3 async proxy</summary>
-
-
-
-</details>
-
-<details>
-
-<summary>Example 4 Multi-client Server</summary>
-
-
-
-</details>
-
+More example usages can be found in `./tests/tests/`.
 
 ## Designs
 **execute**: 
@@ -209,5 +157,4 @@ let res = water.send()?;
     1. memory initialiation & limitation
     2. (`v1_preview` feature) wasm_config sharing to WASM
     3. export helper functions (e.g. creation of TCP, TLS, crypto, etc)
-3. (`v1` feature) setup multi-threading
-4. Run the `entry_fn` or execute as the Role (`Dial`, `Listen`, `Relay`)
+3. Run the `entry_fn` or execute as the Role (`Dial`, `Listen`, `Relay`)

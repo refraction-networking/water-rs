@@ -124,7 +124,7 @@ async fn wasm_managed_shadowsocks_async() -> Result<(), Box<dyn std::error::Erro
     const SERVER_ADDR: &str = "127.0.0.1:8088";
     const LOCAL_ADDR: &str = "127.0.0.1:8081";
 
-    const PASSWORD: &str = "Test!23";
+    const PASSWORD: &str = "WATERisAwesome!23";
     const METHOD: CipherKind = CipherKind::CHACHA20_POLY1305;
 
     let cfg_str = r#"
@@ -133,6 +133,7 @@ async fn wasm_managed_shadowsocks_async() -> Result<(), Box<dyn std::error::Erro
         "remote_port": 8088,
         "local_address": "127.0.0.1",
         "local_port": 8080,
+        "password": "WATERisAwesome!23",
         "bypass": false
     }
 	"#;
@@ -201,6 +202,7 @@ async fn wasm_managed_shadowsocks_bypass_async() -> Result<(), Box<dyn std::erro
 		"remote_port": 10085,
 		"local_address": "127.0.0.1",
 		"local_port": 10086,
+        "password": "Test!23",
         "bypass": true
 	}
 	"#;

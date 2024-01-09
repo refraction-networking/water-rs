@@ -1,15 +1,15 @@
+//! Logic for unpackaging trait
+
 use super::*;
 
 use tokio::io::AsyncRead;
 
-// Developer Guide: Logic for packaging
-
-// A trait for a decoder, developers should implement this trait and pass it to _read_from_outbound
+/// A trait for a decoder, developers should implement this trait and pass it to _read_from_outbound
 pub trait Decoder {
     fn decode(&self, input: &[u8], output: &mut [u8]) -> Result<u32, anyhow::Error>;
 }
 
-// A default decoder that does just copy + paste
+/// A default decoder that does just copy + paste
 pub struct DefaultDecoder;
 
 impl Decoder for DefaultDecoder {

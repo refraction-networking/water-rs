@@ -96,6 +96,8 @@ impl WATERClient {
         })
     }
 
+    /// keep_listen is the function that is called when user wants to accept a newly income connection,
+    /// it creates a new WASM instance and migrate the previous listener to it. Used by v0 listener and relay for now.
     pub fn keep_listen(&mut self) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERClient keep listening...",);
 
@@ -141,31 +143,19 @@ impl WATERClient {
         Ok(())
     }
 
-    /// `listen` is the entry point for `Listener` to create the Listener and listen on a local addr
+    /// `listen` is the function for `Listener` and `Relay` to create the Listener and listen on a local addr
     pub fn listen(&mut self) -> Result<(), anyhow::Error> {
-        info!("[HOST] WATERClient listening ...");
+        info!("[HOST] WATERClient creating listener ...");
 
         match &mut self.stream {
             WATERClientType::Listener(listener) => {
                 listener.listen(&self.config)?;
             }
+            WATERClientType::Relay(relay) => {
+                relay.listen(&self.config)?;
+            }
             _ => {
                 return Err(anyhow::anyhow!("[HOST] This client is not a Listener"));
-            }
-        }
-        Ok(())
-    }
-
-    /// `relay` is the entry point for `Relay` to listen on a local address and connect to a remote addr
-    pub fn relay(&mut self) -> Result<(), anyhow::Error> {
-        info!("[HOST] WATERClient relaying ...");
-
-        match &mut self.stream {
-            WATERClientType::Relay(relay) => {
-                relay.relay(&self.config)?;
-            }
-            _ => {
-                return Err(anyhow::anyhow!("[HOST] This client is not a Relay"));
             }
         }
         Ok(())

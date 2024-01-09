@@ -1,20 +1,26 @@
+//! The common code for v0 development of WATM module
+
 use std::os::fd::FromRawFd;
 use tokio::net::TcpStream;
 
 // WASI Imports
 extern "C" {
-    pub fn host_accept() -> i32; // obtain a connection (specified by returned fd) accepted by the host
-    pub fn host_dial() -> i32; // obtain a connection (specified by returned fd) dialed by the host
-    pub fn host_defer(); // call when exiting
+    /// obtain a connection (specified by returned fd) accepted by the host
+    pub fn host_accept() -> i32;
+    /// obtain a connection (specified by returned fd) dialed by the host
+    pub fn host_dial() -> i32;
+    /// call when exiting
+    pub fn host_defer();
+    /// obtain a configuration file (specified by returned fd) from the host
     #[allow(dead_code)]
-    pub fn pull_config() -> i32; // obtain a configuration file (specified by returned fd) from the host
+    pub fn pull_config() -> i32;
 }
 
-// enumerated constants for Role (i32)
-//  0: unknown
-//  1: dialer
-//  2: listener
-//  3: relay
+/// enumerated constants for Role (i32)
+///  0: unknown
+///  1: dialer
+///  2: listener
+///  3: relay
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Role {
     Unknown = 0,
@@ -25,7 +31,8 @@ pub enum Role {
 
 pub struct AsyncFdConn {
     fd: i32,
-    temp_stream: Option<std::net::TcpStream>, // used to hold the std tcp stream, will be upgraded to tokio stream later
+    /// used to hold the std tcp stream, will be upgraded to tokio stream later
+    temp_stream: Option<std::net::TcpStream>,
     stream: Option<TcpStream>,
 }
 
@@ -56,18 +63,11 @@ impl AsyncFdConn {
         let stdstream = unsafe { std::net::TcpStream::from_raw_fd(fd) };
 
         self.temp_stream = Some(stdstream);
-        // println!("wrap: stdstream = {:?}", stdstream);
-        // stdstream
-        //     .set_nonblocking(true)
-        //     .expect("Failed to set non-blocking");
 
-        // println!("wrap: stream = {:?}", stdstream);
-        // self.stream =
-        //     Some(TcpStream::from_std(stdstream).expect("Failed to convert to tokio stream"));
-        // Ok(())
         Ok(())
     }
 
+    /// upgrade the std stream to tokio stream where to explicitly make it non-blocking for async
     pub fn tokio_upgrade(&mut self) -> Result<(), String> {
         if self.fd < 0 {
             return Err("invalid fd".to_string());
