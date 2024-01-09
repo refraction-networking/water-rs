@@ -1,6 +1,6 @@
 use water::config::{WATERConfig, WaterBinType};
 use water::globals::{CONFIG_WASM_PATH, MAIN, WASM_PATH};
-use water::runtime;
+use water::runtime::client::WATERClient;
 
 use clap::Parser;
 
@@ -47,52 +47,30 @@ pub fn parse() -> Result<WATERConfig, anyhow::Error> {
     Ok(conf)
 }
 
-pub fn parse_and_execute() -> Result<(), anyhow::Error> {
-    execute(parse()?)
+pub async fn parse_and_execute() -> Result<(), anyhow::Error> {
+    execute(parse()?).await
 }
 
-pub fn execute(_conf: WATERConfig) -> Result<(), anyhow::Error> {
-    let mut water_client = runtime::client::WATERClient::new(_conf).unwrap();
+pub async fn execute(_conf: WATERConfig) -> Result<(), anyhow::Error> {
+    let mut water_client = WATERClient::new(_conf).unwrap();
 
     match water_client.config.client_type {
         WaterBinType::Dial => {
             water_client.connect().unwrap();
         }
         WaterBinType::Runner => {
+            // generally for v1_preview shadowsocks client
             water_client.execute().unwrap();
         }
         WaterBinType::Listen => {
             water_client.listen().unwrap();
-            water_client.accept().unwrap();
-            water_client.cancel_with().unwrap();
 
-            let handle_water = water_client.run_worker().unwrap();
-
-            // taking input from terminal
             loop {
-                let mut buf = vec![0; 1024];
-                let res = water_client.read(&mut buf);
-
-                if res.is_ok() {
-                    let str_buf = String::from_utf8(buf).unwrap();
-                    if str_buf.trim() == "exit" {
-                        water_client.cancel().unwrap();
-                        break;
-                    }
-
-                    println!("Received: {}", str_buf);
-                } else {
-                    println!("Error: {}", res.unwrap_err());
-                }
+                water_client.accept().unwrap();
+                let next_water_client = water_client.keep_listen().unwrap();
+                handle_incoming(water_client).await.unwrap();
+                water_client = next_water_client;
             }
-
-            match handle_water.join().unwrap() {
-                Ok(_) => {}
-                Err(e) => {
-                    eprintln!("Running _water_worker ERROR: {}", e);
-                    return Err(anyhow::anyhow!("Failed to join _water_worker thread"));
-                }
-            };
         }
         WaterBinType::Relay => {
             water_client.listen().unwrap();
@@ -134,6 +112,41 @@ pub fn execute(_conf: WATERConfig) -> Result<(), anyhow::Error> {
         WaterBinType::Wrap => {}
         WaterBinType::Unknown => {}
     }
+
+    Ok(())
+}
+
+pub async fn handle_incoming(mut water_client: WATERClient) -> Result<(), anyhow::Error> {
+    water_client.cancel_with().unwrap();
+
+    let handle_water = water_client.run_worker().unwrap();
+
+    // taking input from terminal
+    loop {
+        let mut buf = vec![0; 1024];
+        let res = water_client.read(&mut buf);
+
+        if res.is_ok() {
+            let str_buf = String::from_utf8(buf).unwrap();
+            if str_buf.trim() == "exit" {
+                water_client.cancel().unwrap();
+                break;
+            }
+
+            println!("Received: {}", str_buf);
+        } else {
+            println!("Error: {}", res.unwrap_err());
+            break;
+        }
+    }
+
+    match handle_water.join().unwrap() {
+        Ok(_) => {}
+        Err(e) => {
+            eprintln!("Running _water_worker ERROR: {}", e);
+            return Err(anyhow::anyhow!("Failed to join _water_worker thread"));
+        }
+    };
 
     Ok(())
 }

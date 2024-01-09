@@ -93,12 +93,14 @@ impl V0Config {
         })
     }
 
+    /// It will connect to the remote addr and set the fd in the V0Config
     pub fn connect(&mut self) -> Result<std::net::TcpStream, anyhow::Error> {
         let addr = format!("{}:{}", self.remote_addr, self.remote_port);
 
         info!("[HOST] WATERCore V0 connecting to {}", addr);
 
         match &mut self.conn {
+            // if the V0CRole is Relay, then it will remain as Relay
             V0CRole::Relay(_, _, ref mut conn_fd) => {
                 // now relay has been built, need to dial
                 if *conn_fd != -1 {
@@ -109,6 +111,7 @@ impl V0Config {
                 *conn_fd = conn.as_raw_fd();
                 Ok(conn)
             }
+            // if the V0CRole has not been set, and connect() was called, then it should be a dialer
             V0CRole::Unknown => {
                 let conn = std::net::TcpStream::connect(addr)?;
                 self.conn = V0CRole::Dialer(conn.as_raw_fd());
@@ -118,6 +121,7 @@ impl V0Config {
         }
     }
 
+    /// It will create a listener and set the fd in the V0Config (for either listener or relay)
     pub fn create_listener(&mut self, is_relay: bool) -> Result<(), anyhow::Error> {
         let addr = format!("{}:{}", self.loc_addr, self.loc_port);
 
@@ -133,6 +137,7 @@ impl V0Config {
         Ok(())
     }
 
+    /// It will accept a connection and set the fd in the V0Config (for either listener or relay)
     pub fn accept(&mut self) -> Result<std::net::TcpStream, anyhow::Error> {
         info!("[HOST] WATERCore V0 accept with conn {:?} ...", self.conn);
 
@@ -166,6 +171,7 @@ impl V0Config {
         }
     }
 
+    /// It will close the connection to remote / accepted connection listened and exit gracefully
     pub fn defer(&mut self) {
         info!("[HOST] WATERCore V0 defer with conn {:?} ...", self.conn);
 
@@ -193,6 +199,7 @@ impl V0Config {
         }
     }
 
+    /// It is used for listener and relay only, to reset the accepted connection in the migrated listener / relay
     pub fn reset_listener_or_relay(&mut self) {
         info!(
             "[HOST] WATERCore v0 reset lisener / relay with conn {:?} ...",
@@ -202,21 +209,15 @@ impl V0Config {
         match self.conn {
             V0CRole::Listener(_, ref mut accepted_fd) => {
                 if *accepted_fd != -1 {
-                    let accepted_conn = unsafe { std::net::TcpStream::from_raw_fd(*accepted_fd) };
-                    drop(accepted_conn);
                     *accepted_fd = -1; // set it back to default
                 }
             }
             V0CRole::Relay(_, ref mut accepted_fd, ref mut conn_fd) => {
                 if *accepted_fd != -1 {
-                    let accepted_conn = unsafe { std::net::TcpStream::from_raw_fd(*accepted_fd) };
-                    drop(accepted_conn);
                     *accepted_fd = -1; // set it back to default
                 }
 
                 if *conn_fd != -1 {
-                    let conn = unsafe { std::net::TcpStream::from_raw_fd(*conn_fd) };
-                    drop(conn);
                     *conn_fd = -1; // set it back to default
                 }
             }

@@ -9,8 +9,9 @@ use tracing::Level;
 
 mod cli;
 
-fn main() -> Result<(), anyhow::Error> {
+#[tokio::main]
+async fn main() -> Result<(), anyhow::Error> {
     tracing_subscriber::fmt().with_max_level(Level::INFO).init();
 
-    cli::parse_and_execute()
+    cli::parse_and_execute().await
 }
