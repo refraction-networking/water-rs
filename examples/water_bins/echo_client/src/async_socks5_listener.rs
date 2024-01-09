@@ -25,7 +25,7 @@ fn _listener_creation() -> Result<i32, std::io::Error> {
         }
     };
 
-    // FIXME: hardcoded the filename for now, make it a config later
+    // NOTE: hardcoded the filename for now, make it a config later
     let stream = StreamConfigV1::init(
         global_conn.config.local_address.clone(),
         global_conn.config.local_port,

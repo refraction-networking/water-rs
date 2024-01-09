@@ -25,7 +25,6 @@ fn _listener_creation() -> Result<i32, std::io::Error> {
         }
     };
 
-    // FIXME: hardcoded the filename for now, make it a config later
     let stream = StreamConfigV1::init(global_conn.config.local_address.clone(), global_conn.config.local_port, "LISTEN".to_string());
     
     let encoded: Vec<u8> = bincode::serialize(&stream).expect("Failed to serialize");

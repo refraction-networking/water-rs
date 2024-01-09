@@ -1,6 +1,8 @@
 use super::*;
 
 use bytes::{BufMut, BytesMut};
+use shadowsocks_crypto::v1::openssl_bytes_to_key;
+use std::sync::Arc;
 
 #[cfg(target_family = "wasm")]
 #[export_name = "_water_init"]
@@ -29,7 +31,7 @@ pub fn _process_config(fd: i32) {
     let mut config = String::new();
     match config_file.read_to_string(&mut config) {
         Ok(_) => {
-            let config: Config = match serde_json::from_str(&config) {
+            let config: SSConfig = match serde_json::from_str(&config) {
                 Ok(config) => config,
                 Err(e) => {
                     eprintln!("[WASM] > _process_config ERROR: {}", e);
@@ -83,6 +85,43 @@ async fn _start_listen(bypass: bool) -> std::io::Result<()> {
     // Convert to tokio TcpListener.
     let listener = TcpListener::from_std(standard)?;
 
+    // Initialize the variables for the server address and the encryption key
+    let mut server_addr: Address = Address::SocketAddress(SocketAddr::from(([127, 0, 0, 1], 8088)));
+    let mut enc_key = vec![0u8; CIPHER_METHOD.key_len()].into_boxed_slice();
+
+    {
+        let global_conn = match CONN.lock() {
+            Ok(conn) => conn,
+            Err(e) => {
+                eprintln!("[WASM] > ERROR: {}", e);
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "failed to lock CONN",
+                ));
+            }
+        };
+
+        // getting the server ip address
+        match IpAddr::from_str(&global_conn.config.remote_address) {
+            Ok(ip_addr) => {
+                server_addr = Address::SocketAddress(SocketAddr::from((
+                    ip_addr,
+                    global_conn.config.remote_port as u16,
+                )));
+                println!("Server address: {}", server_addr);
+            }
+            Err(e) => {
+                eprintln!("Failed to parse IP address: {}", e);
+            }
+        }
+
+        // getting the enc_key derived from the password
+        openssl_bytes_to_key(global_conn.config.password.as_bytes(), &mut enc_key);
+    }
+
+    // Create a Arc for the encryption key
+    let enc_key = Arc::new(enc_key);
+
     info!("[WASM] Starting to listen...");
 
     loop {
@@ -95,10 +134,18 @@ async fn _start_listen(bypass: bool) -> std::io::Result<()> {
             }
         };
 
+        // Clone server_addr(will be changed) for each iteration of the loop.
+        let server_addr_clone = server_addr.clone();
+
+        // Clone the Arc for enc_key to save resources.
+        let enc_key_clone = Arc::clone(&enc_key);
+
+        // let enc_key_clone = enc_key.clone();
+
         // Spawn a background task for each new connection.
         tokio::spawn(async move {
             eprintln!("[WASM] > CONNECTED");
-            match _handle_connection(socket, bypass).await {
+            match _handle_connection(socket, server_addr_clone, &enc_key_clone, bypass).await {
                 Ok(()) => eprintln!("[WASM] > DISCONNECTED"),
                 Err(e) => eprintln!("[WASM] > ERROR: {}", e),
             }
@@ -107,7 +154,12 @@ async fn _start_listen(bypass: bool) -> std::io::Result<()> {
 }
 
 // SS handle incoming connections
-async fn _handle_connection(stream: TcpStream, bypass: bool) -> std::io::Result<()> {
+async fn _handle_connection(
+    stream: TcpStream,
+    server_addr: Address,
+    key: &[u8],
+    bypass: bool,
+) -> std::io::Result<()> {
     let mut inbound_con = Socks5Handler::new(stream);
     inbound_con.socks5_greet().await.expect("Failed to greet");
 
@@ -120,16 +172,18 @@ async fn _handle_connection(stream: TcpStream, bypass: bool) -> std::io::Result<
     if bypass {
         _connect_bypass(&target_addr, &mut inbound_con).await?;
     } else {
-        _connect(target_addr, &mut inbound_con).await?;
+        _connect(target_addr, server_addr, key, &mut inbound_con).await?;
     }
 
     Ok(())
 }
 
-async fn _connect(target_addr: Address, inbound_con: &mut Socks5Handler) -> std::io::Result<()> {
-    // FIXME: hardcoded server ip:address for now + only support connection with ip:port
-    let server_addr = Address::SocketAddress(SocketAddr::from(([127, 0, 0, 1], 8388)));
-
+async fn _connect(
+    target_addr: Address,
+    server_addr: Address,
+    key: &[u8],
+    inbound_con: &mut Socks5Handler,
+) -> std::io::Result<()> {
     let server_stream = _dial_remote(&server_addr).expect("Failed to dial to SS-Server");
 
     // Constructing the response header
@@ -139,13 +193,8 @@ async fn _connect(target_addr: Address, inbound_con: &mut Socks5Handler) -> std:
 
     inbound_con.socks5_response(&mut buf).await;
 
-    // FIXME: hardcoded the key which derived from the password: "Test!23"
-    let key = [
-        128, 218, 128, 160, 125, 72, 115, 9, 187, 165, 163, 169, 92, 177, 35, 201, 49, 245, 92,
-        203, 57, 152, 63, 149, 108, 132, 60, 128, 201, 206, 82, 226,
-    ];
     // creating the client proxystream -- contains cryptostream with both AsyncRead and AsyncWrite implemented
-    let mut proxy = ProxyClientStream::from_stream(server_stream, target_addr, CIPHER_METHOD, &key);
+    let mut proxy = ProxyClientStream::from_stream(server_stream, target_addr, CIPHER_METHOD, key);
 
     match copy_encrypted_bidirectional(CIPHER_METHOD, &mut proxy, &mut inbound_con.stream).await {
         Ok((wn, rn)) => {
@@ -192,7 +241,7 @@ async fn _connect_bypass(
 pub fn _dial_remote(target: &Address) -> Result<TcpStream, std::io::Error> {
     let mut tcp_dialer = Dialer::new();
 
-    // NOTE: only support ip:port for now, add DNS resolver helper from Host later
+    // TODO: only support ip:port for now, add DNS resolver helper from Host later
     match target {
         Address::SocketAddress(addr) => {
             tcp_dialer.config.remote_address = addr.ip().to_string();
@@ -249,7 +298,7 @@ pub fn _listener_creation() -> Result<i32, std::io::Error> {
         global_conn.config.local_address, global_conn.config.local_port
     );
 
-    // FIXME: hardcoded the filename for now, make it a config later
+    // NOTE: hardcoded the filename for now, make it a config later
     let stream = StreamConfigV1::init(
         global_conn.config.local_address.clone(),
         global_conn.config.local_port,

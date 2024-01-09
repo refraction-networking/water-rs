@@ -7,10 +7,11 @@ use std::{
     fmt::{self, Debug},
     future::Future,
     io::{self, ErrorKind, Read},
-    net::SocketAddr,
+    net::{IpAddr, SocketAddr},
     os::fd::FromRawFd,
     pin::Pin,
     slice,
+    str::FromStr,
     sync::Mutex,
     task::{Context, Poll},
     vec,
@@ -32,6 +33,7 @@ use tracing::{debug, info, Level};
 // =================== MODULES ===================
 pub mod aead;
 pub mod client;
+pub mod config;
 pub mod crypto_io;
 pub mod socks5;
 pub mod utils;
@@ -40,6 +42,7 @@ pub mod water;
 // =================== DEPENDENCIES FROM MODULES ===================
 use aead::{DecryptedReader, EncryptedWriter};
 use client::*;
+use config::*;
 use crypto_io::*;
 use socks5::*;
 use utils::*;
@@ -54,6 +57,6 @@ pub static V1: i32 = 0;
 
 // create a mutable global variable stores a pointer to the config
 lazy_static! {
-    pub static ref CONN: Mutex<Connection> = Mutex::new(Connection::new());
+    pub static ref CONN: Mutex<Connection<SSConfig>> = Mutex::new(Connection::new(SSConfig::new()));
     pub static ref DIALER: Mutex<Dialer> = Mutex::new(Dialer::new());
 }
