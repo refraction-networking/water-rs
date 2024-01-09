@@ -61,8 +61,76 @@ pub fn execute(_conf: WATERConfig) -> Result<(), anyhow::Error> {
         WaterBinType::Runner => {
             water_client.execute().unwrap();
         }
-        WaterBinType::Listen => {}
-        WaterBinType::Relay => {}
+        WaterBinType::Listen => {
+            water_client.listen().unwrap();
+            water_client.accept().unwrap();
+            water_client.cancel_with().unwrap();
+
+            let handle_water = water_client.run_worker().unwrap();
+
+            // taking input from terminal
+            loop {
+                let mut buf = vec![0; 1024];
+                let res = water_client.read(&mut buf);
+
+                if res.is_ok() {
+                    let str_buf = String::from_utf8(buf).unwrap();
+                    if str_buf.trim() == "exit" {
+                        water_client.cancel().unwrap();
+                        break;
+                    }
+
+                    println!("Received: {}", str_buf);
+                } else {
+                    println!("Error: {}", res.unwrap_err());
+                }
+            }
+            
+            match handle_water.join().unwrap() {
+                Ok(_) => {}
+                Err(e) => {
+                    eprintln!("Running _water_worker ERROR: {}", e);
+                    return Err(anyhow::anyhow!("Failed to join _water_worker thread"));
+                }
+            };
+        }
+        WaterBinType::Relay => {
+            water_client.relay().unwrap();
+            water_client.associate().unwrap();
+            water_client.cancel_with().unwrap();
+
+            let handle_water = water_client.run_worker().unwrap();
+
+            // taking input from terminal
+            loop {
+                let mut input = String::new();
+                std::io::stdin().read_line(&mut input).unwrap();
+
+                if input.trim() == "exit" {
+                    water_client.cancel().unwrap();
+                    break;
+                }
+
+                water_client.write(input.as_bytes()).unwrap();
+
+                let mut buf = vec![0; 1024];
+                let res = water_client.read(&mut buf);
+                
+                if res.is_ok() {
+                    println!("Received: {}", String::from_utf8_lossy(&buf));
+                } else {
+                    println!("Error: {}", res.unwrap_err());
+                }
+            }
+            
+            match handle_water.join().unwrap() {
+                Ok(_) => {}
+                Err(e) => {
+                    eprintln!("Running _water_worker ERROR: {}", e);
+                    return Err(anyhow::anyhow!("Failed to join _water_worker thread"));
+                }
+            };
+        }
         WaterBinType::Wrap => {}
         WaterBinType::Unknown => {}
     }

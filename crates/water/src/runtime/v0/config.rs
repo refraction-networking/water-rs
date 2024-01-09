@@ -146,7 +146,7 @@ impl V0Config {
 
                 let (stream, _) = listener.accept()?;
 
-                *listener_fd = listener.into_raw_fd(); // makde sure the listener is not closed after scope
+                *listener_fd = listener.into_raw_fd(); // made sure the listener is not closed after scope
                 *accepted_fd = stream.as_raw_fd();
 
                 Ok(stream)
@@ -158,7 +158,7 @@ impl V0Config {
 
                 let listener = unsafe { std::net::TcpListener::from_raw_fd(*listener_fd) };
                 let (stream, _) = listener.accept()?;
-                *listener_fd = listener.into_raw_fd(); // makde sure the listener is not closed after scope
+                *listener_fd = listener.into_raw_fd(); // made sure the listener is not closed after scope
                 *accepted_fd = stream.as_raw_fd();
                 Ok(stream)
             }
