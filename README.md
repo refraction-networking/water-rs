@@ -1,5 +1,5 @@
 # W.A.T.E.R.: WebAssembly Transport Executables Runtime
-![GitHub License](https://img.shields.io/github/license/erikziyunchi/water-rs?label=License)
+![GitHub License](https://img.shields.io/github/license/erikziyunchi/water-rs)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ferikziyunchi%2Fwater-rs.svg?type=shield&issueType=license)](https://app.fossa.com/projects/git%2Bgithub.com%2Ferikziyunchi%2Fwater-rs?ref=badge_shield&issueType=license) [![Build & Test Status](https://github.com/erikziyunchi/WASMable-Transport/actions/workflows/rust.yml/badge.svg?branch=main)](https://github.com/erikziyunchi/WASMable-Transport/actions/workflows/rust.yml)
 
 <div style="width: 100%; height = 160px">
