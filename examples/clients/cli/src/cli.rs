@@ -79,27 +79,27 @@ pub async fn execute(_conf: WATERConfig) -> Result<(), anyhow::Error> {
 
             let handle_water = water_client.run_worker().unwrap();
 
-            // taking input from terminal
-            loop {
-                let mut input = String::new();
-                std::io::stdin().read_line(&mut input).unwrap();
+            // // taking input from terminal
+            // loop {
+            //     let mut input = String::new();
+            //     std::io::stdin().read_line(&mut input).unwrap();
 
-                if input.trim() == "exit" {
-                    water_client.cancel().unwrap();
-                    break;
-                }
+            //     if input.trim() == "exit" {
+            //         water_client.cancel().unwrap();
+            //         break;
+            //     }
 
-                water_client.write(input.as_bytes()).unwrap();
+            //     water_client.write(input.as_bytes()).unwrap();
 
-                let mut buf = vec![0; 1024];
-                let res = water_client.read(&mut buf);
+            //     let mut buf = vec![0; 1024];
+            //     let res = water_client.read(&mut buf);
 
-                if res.is_ok() {
-                    println!("Received: {}", String::from_utf8_lossy(&buf));
-                } else {
-                    println!("Error: {}", res.unwrap_err());
-                }
-            }
+            //     if res.is_ok() {
+            //         println!("Received: {}", String::from_utf8_lossy(&buf));
+            //     } else {
+            //         println!("Error: {}", res.unwrap_err());
+            //     }
+            // }
 
             match handle_water.join().unwrap() {
                 Ok(_) => {}
@@ -116,6 +116,7 @@ pub async fn execute(_conf: WATERConfig) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
+// set as async for later dev of async reading from the pipe
 pub async fn handle_incoming(mut water_client: WATERClient) -> Result<(), anyhow::Error> {
     water_client.cancel_with().unwrap();
 
