@@ -1,5 +1,4 @@
-//! This is the test file for testing the plain.wasm which is a v0_plus WATM module that has been tested with the Go engine.
-//! But with the Relay mode
+//! This is the test file for testing the plain.wasm in Relay mode which is a v0_plus WATM module that has been tested with the Go engine.
 
 #![allow(dead_code)]
 
@@ -25,8 +24,7 @@ fn test_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
 		"remote_address": "127.0.0.1",
 		"remote_port": 8088,
 		"local_address": "127.0.0.1",
-		"local_port": 8080,
-        "bypass": false
+		"local_port": 8080
 	}
 	"#;
     // Create a directory inside of `std::env::temp_dir()`.
@@ -58,8 +56,8 @@ fn test_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
         // More details for the Go-side of running plain.wasm check here:
         // https://github.com/gaukas/water/tree/master/examples/v0/plain
         //
-        // More details for the implementation of plain.wasm check this PR:
-        // https://github.com/erikziyunchi/water-rs/pull/10
+        // Source code of plain.wasm:
+        // https://github.com/erikziyunchi/water-rs/tree/main/examples/water_bins/plain_v0
         //
         String::from("./test_wasm/plain.wasm"),
         String::from("_water_worker"),
@@ -115,80 +113,6 @@ fn test_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
             )));
         }
     };
-
-    Ok(())
-}
-
-// A test that do nothing but just spin up the relay for 20 seconds
-// #[test]
-fn spin_cross_lang_wasm_relay() -> Result<(), Box<dyn std::error::Error>> {
-    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
-
-    let cfg_str = r#"
-	{
-		"remote_address": "127.0.0.1",
-		"remote_port": 5201,
-		"local_address": "127.0.0.1",
-		"local_port": 8082,
-        "bypass": false
-	}
-	"#;
-    // Create a directory inside of `std::env::temp_dir()`.
-    let dir = tempdir()?;
-    let file_path = dir.path().join("temp-config.txt");
-    let mut file = File::create(&file_path)?;
-    writeln!(file, "{}", cfg_str)?;
-
-    let conf = config::WATERConfig::init(
-        // plain.wasm is in v0 and fully compatible with the Go engine
-        // More details for the Go-side of running plain.wasm check here:
-        // https://github.com/gaukas/water/tree/master/examples/v0/plain
-        //
-        // More details for the implementation of plain.wasm check this PR:
-        // https://github.com/erikziyunchi/water-rs/pull/10
-        //
-        String::from("./test_wasm/plain.wasm"),
-        String::from("_water_worker"),
-        String::from(file_path.to_string_lossy()),
-        config::WaterBinType::Relay,
-        true,
-    )
-    .unwrap();
-
-    let mut water_client = runtime::client::WATERClient::new(conf).unwrap();
-
-    water_client.listen().unwrap();
-
-    water_client.associate().unwrap();
-    water_client.cancel_with().unwrap();
-
-    let mut handle_water = water_client.run_worker().unwrap();
-
-    for _i in 0..5 {
-        match handle_water.join().unwrap() {
-            Ok(_) => {}
-            Err(e) => {
-                eprintln!("Running _water_worker ERROR: {}", e);
-                return Err(Box::new(Error::new(
-                    ErrorKind::Other,
-                    "Failed to join _water_worker thread",
-                )));
-            }
-        };
-
-        let mut new_water = water_client.keep_listen().unwrap();
-        // no need to call relay again, since relay() is also creating the listener
-        new_water.associate().unwrap();
-        new_water.cancel_with().unwrap();
-        handle_water = new_water.run_worker().unwrap();
-    }
-
-    std::thread::sleep(std::time::Duration::from_secs(20));
-
-    water_client.cancel().unwrap();
-
-    drop(file);
-    dir.close()?;
 
     Ok(())
 }

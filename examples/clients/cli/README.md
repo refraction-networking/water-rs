@@ -20,7 +20,13 @@ you should see `> CONNECTED` in the terminal of running WASM, then you can conne
        {
            "server": "127.0.0.1",
            "server_port": 8388,
-           "password": "Test!23",
+           
+           // match the password in the config passed into WATER-cli [remove the comment when copying]
+           "password": "WATERisAwesome!",
+
+           // for now, this is a global variable set in the ShadowSocks WATM, will add the config for it later
+           // the global var is set here: https://github.com/erikziyunchi/water-rs/blob/48716579a3ff69a5de5e4f69c47ff2a80470d96d/examples/water_bins/ss_client_wasm_v1/src/lib.rs#L2
+           // [remove these comment lines when copying]
            "method": "chacha20-ietf-poly1305"
        }
        ```

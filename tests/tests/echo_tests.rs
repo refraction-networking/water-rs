@@ -18,8 +18,7 @@ fn test_echo() -> Result<(), Box<dyn std::error::Error>> {
 		"remote_address": "127.0.0.1",
 		"remote_port": 8080,
 		"local_address": "127.0.0.1",
-		"local_port": 8088,
-        "bypass": false
+		"local_port": 8088
 	}
 	"#;
     // Create a directory inside of `std::env::temp_dir()`.
@@ -30,7 +29,6 @@ fn test_echo() -> Result<(), Box<dyn std::error::Error>> {
 
     let test_message = b"hello";
     let handle = std::thread::spawn(|| {
-        // let listener = TcpListener::bind("127.0.0.1:8080").await.unwrap();
         let listener = TcpListener::bind(("127.0.0.1", 8080)).unwrap();
         let (mut socket, _) = listener.accept().unwrap();
         let mut buf = [0; 1024];
@@ -46,6 +44,9 @@ fn test_echo() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let conf = config::WATERConfig::init(
+        // Source code of echo_client.wasm:
+        // https://github.com/erikziyunchi/water-rs/tree/main/examples/water_bins/echo_client
+        //
         String::from("./test_wasm/echo_client.wasm"),
         String::from("_water_init"),
         String::from(file_path.to_string_lossy()),

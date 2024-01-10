@@ -18,8 +18,7 @@ Library docs will be availale soon on `docs.rs`, for now you can run `cargo doc 
 // 		"remote_address": "127.0.0.1",
 // 		"remote_port": 8080,
 // 		"local_address": "127.0.0.1",
-// 		"local_port": 8088,
-//      "bypass": false
+// 		"local_port": 8088
 // 	}
     
 // construct the config
