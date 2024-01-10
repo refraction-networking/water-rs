@@ -75,62 +75,10 @@ impl H2O<Host> {
             return Err(anyhow::Error::msg("WATM module version not found"));
         }
 
-        Self::setup_core(conf, linker, store, module, engine, version)
+        Self::create_core(conf, linker, store, module, engine, version)
     }
 
-    /// This function is for migrating the v0 core for listener and relay
-    /// to handle every new connection will create a new separate core (as v0 spec)
-    pub fn v0_migrate_core(conf: &WATERConfig, core: &H2O<Host>) -> Result<Self, anyhow::Error> {
-        info!("[HOST] WATERCore H2O v0_migrating...");
-
-        // reseting the listener accepted_fd or the relay's accepted_fd & dial_fd
-        // when migrating from existed listener / relay
-        let version = match &core.version {
-            Version::V0(v0conf) => {
-                match v0conf {
-                    Some(og_v0_conf) => match og_v0_conf.lock() {
-                        Ok(og_v0_conf) => {
-                            let mut new_v0_conf_inner = og_v0_conf.clone();
-                            // reset the new cloned v0conf
-                            new_v0_conf_inner.reset_listener_or_relay();
-
-                            Version::V0(Some(Arc::new(Mutex::new(new_v0_conf_inner))))
-                        }
-                        Err(e) => {
-                            return Err(anyhow::anyhow!("Failed to lock v0_conf: {}", e))?;
-                        }
-                    },
-                    None => {
-                        return Err(anyhow::anyhow!("v0_conf is None"))?;
-                    }
-                }
-            }
-            _ => {
-                return Err(anyhow::anyhow!("This is not a V0 core"))?;
-            }
-        };
-
-        // NOTE: Some of the followings can reuse the existing core, leave to later explore
-        let wasm_config = wasmtime::Config::new();
-
-        #[cfg(feature = "multithread")]
-        {
-            wasm_config.wasm_threads(true);
-        }
-
-        let engine = Engine::new(&wasm_config)?;
-        let linker: Linker<Host> = Linker::new(&engine);
-
-        let module = Module::from_file(&engine, &conf.filepath)?;
-
-        let host = Host::default();
-        let store = Store::new(&engine, host);
-
-        Self::setup_core(conf, linker, store, module, engine, Some(version))
-    }
-
-    /// called by init_core() or v0_migrate_core() to setup the core (reduce code duplication)
-    pub fn setup_core(
+    pub fn create_core(
         conf: &WATERConfig,
         mut linker: Linker<Host>,
         mut store: Store<Host>,
@@ -211,6 +159,57 @@ impl H2O<Host> {
             store: Arc::new(Mutex::new(store)),
             module,
         })
+    }
+
+    // This function is for migrating the v0 core for listener and relay
+    // to handle every new connection is creating a new separate core (as v0 spec)
+    pub fn v0_migrate_core(conf: &WATERConfig, core: &H2O<Host>) -> Result<Self, anyhow::Error> {
+        info!("[HOST] WATERCore H2O v0_migrating...");
+
+        // reseting the listener accepted_fd or the relay's accepted_fd & dial_fd
+        // when migrating from existed listener / relay
+        let version = match &core.version {
+            Version::V0(v0conf) => {
+                match v0conf {
+                    Some(og_v0_conf) => match og_v0_conf.lock() {
+                        Ok(og_v0_conf) => {
+                            let mut new_v0_conf_inner = og_v0_conf.clone();
+                            // reset the new cloned v0conf
+                            new_v0_conf_inner.reset_listener_or_relay();
+
+                            Version::V0(Some(Arc::new(Mutex::new(new_v0_conf_inner))))
+                        }
+                        Err(e) => {
+                            return Err(anyhow::anyhow!("Failed to lock v0_conf: {}", e))?;
+                        }
+                    },
+                    None => {
+                        return Err(anyhow::anyhow!("v0_conf is None"))?;
+                    }
+                }
+            }
+            _ => {
+                return Err(anyhow::anyhow!("This is not a V0 core"))?;
+            }
+        };
+
+        // NOTE: Some of the followings can reuse the existing core, leave to later explore
+        let wasm_config = wasmtime::Config::new();
+
+        #[cfg(feature = "multithread")]
+        {
+            wasm_config.wasm_threads(true);
+        }
+
+        let engine = Engine::new(&wasm_config)?;
+        let linker: Linker<Host> = Linker::new(&engine);
+
+        let module = Module::from_file(&engine, &conf.filepath)?;
+
+        let host = Host::default();
+        let store = Store::new(&engine, host);
+
+        Self::create_core(conf, linker, store, module, engine, Some(version))
     }
 
     pub fn _prepare(&mut self, conf: &WATERConfig) -> Result<(), anyhow::Error> {

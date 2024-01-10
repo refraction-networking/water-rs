@@ -4,7 +4,7 @@
 
 #![allow(dead_code)]
 
-use water::*;
+use water::{runtime::client::WATERClient, *};
 
 use tracing::Level;
 
@@ -12,6 +12,7 @@ use std::{
     fs::File,
     io::{Error, ErrorKind, Read, Write},
     net::{TcpListener, TcpStream},
+    thread::JoinHandle,
     vec,
 };
 
@@ -184,57 +185,96 @@ fn test_cross_lang_wasm_listener() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// #[test]
-// fn test_cross_lang_wasm_multi_listener() -> Result<(), Box<dyn std::error::Error>> {
-//     // tracing_subscriber::fmt().with_max_level(Level::INFO).init();
+#[test]
+fn test_cross_lang_wasm_multi_listener() -> Result<(), Box<dyn std::error::Error>> {
+    let cfg_str = r#"
+	{
+		"remote_address": "127.0.0.1",
+		"remote_port": 8088,
+		"local_address": "127.0.0.1",
+		"local_port": 10088,
+        "bypass": false
+	}
+	"#;
+    // Create a directory inside of `std::env::temp_dir()`.
+    let dir = tempdir()?;
+    let file_path = dir.path().join("temp-config.txt");
+    let mut file = File::create(&file_path)?;
+    writeln!(file, "{}", cfg_str)?;
 
-//     let cfg_str = r#"
-// 	{
-// 		"remote_address": "127.0.0.1",
-// 		"remote_port": 8088,
-// 		"local_address": "127.0.0.1",
-// 		"local_port": 8084
-// 	}
-// 	"#;
-//     // Create a directory inside of `std::env::temp_dir()`.
-//     let dir = tempdir()?;
-//     let file_path = dir.path().join("temp-config.txt");
-//     let mut file = File::create(&file_path)?;
-//     writeln!(file, "{}", cfg_str)?;
+    let conf = config::WATERConfig::init(
+        // plain.wasm is in v0 and fully compatible with the Go engine
+        // More details for the Go-side of running plain.wasm check here:
+        // https://github.com/gaukas/water/tree/master/examples/v0/plain
+        //
+        // More details for the implementation of plain.wasm check this PR:
+        // https://github.com/erikziyunchi/water-rs/pull/10
+        //
+        String::from("./test_wasm/plain.wasm"),
+        String::from("_water_worker"),
+        String::from(file_path.to_string_lossy()),
+        config::WaterBinType::Listen,
+        true,
+    )
+    .unwrap();
 
-//     let conf = config::WATERConfig::init(
-//         // plain.wasm is in v0 and fully compatible with the Go engine
-//         // More details for the Go-side of running plain.wasm check here:
-//         // https://github.com/gaukas/water/tree/master/examples/v0/plain
-//         //
-//         // More details for the implementation of plain.wasm check this PR:
-//         // https://github.com/erikziyunchi/water-rs/pull/10
-//         //
-//         String::from("./test_wasm/plain.wasm"),
-//         String::from("_water_worker"),
-//         String::from(file_path.to_string_lossy()),
-//         config::WaterBinType::Listen,
-//         true,
-//     )
-//     .unwrap();
+    let mut water_client = runtime::client::WATERClient::new(conf).unwrap();
+    water_client.listen().unwrap();
 
-//     let mut water_client = runtime::client::WATERClient::new(conf).unwrap();
-//     water_client.listen().unwrap();
+    let test_message: &'static [u8] = b"hello";
 
-//     water_client.accept().unwrap();
-//     water_client.cancel_with().unwrap();
-//     let mut handler = water_client.run_worker().unwrap();
+    let mut water_handles: Vec<JoinHandle<()>> = Vec::new();
 
-//     for i in 0..5 {
-//         handler.join().unwrap();
-//         let mut new_water = water_client.keep_listen().unwrap();
-//         new_water.accept().unwrap();
-//         new_water.cancel_with().unwrap();
-//         handler = new_water.run_worker().unwrap();
-//     }
+    // creating two connections to the listener
+    for _i in 0..2 {
+        // make a connect to the listener in a separate thread
+        std::thread::spawn(|| {
+            let mut stream = TcpStream::connect(("127.0.0.1", 10088)).unwrap();
+            let res = stream.write(test_message);
 
-//     drop(file);
-//     dir.close()?;
+            assert!(res.is_ok());
+            let write_bytes = res.unwrap();
 
-//     Ok(())
-// }
+            assert_eq!(write_bytes, test_message.len());
+        });
+
+        water_client.accept().unwrap();
+
+        let new_water = water_client.keep_listen().unwrap();
+
+        water_handles.push(std::thread::spawn(|| {
+            handle_connection(water_client, test_message).unwrap();
+        }));
+
+        water_client = new_water;
+    }
+
+    for handle in water_handles {
+        handle.join().unwrap();
+    }
+
+    drop(file);
+    dir.close()?;
+
+    Ok(())
+}
+
+fn handle_connection(
+    mut water_client: WATERClient,
+    test_message: &[u8],
+) -> Result<(), Box<dyn std::error::Error>> {
+    water_client.cancel_with().unwrap();
+
+    let handle = water_client.run_worker().unwrap();
+
+    let mut buf = vec![0; 32];
+    let res = water_client.read(&mut buf);
+    assert!(res.is_ok());
+    assert_eq!(res.unwrap() as usize, test_message.len());
+
+    water_client.cancel().unwrap();
+
+    let _ = handle.join().unwrap();
+
+    Ok(())
+}

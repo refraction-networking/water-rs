@@ -97,7 +97,7 @@ impl WATERClient {
     }
 
     /// keep_listen is the function that is called when user wants to accept a newly income connection,
-    /// it creates a new WASM instance and migrate the previous listener to it. Used by v0 listener and relay for now.
+    /// it creates a new WASM instance and migrate the previous listener to it. -- v0_plus listener and relay for now.
     pub fn keep_listen(&mut self) -> Result<Self, anyhow::Error> {
         info!("[HOST] WATERClient keep listening...",);
 
@@ -128,7 +128,7 @@ impl WATERClient {
         self.debug = debug;
     }
 
-    /// `connect` is the entry point for `Dialer` to connect to a remote address
+    /// `connect` is the function for `Dialer` to connect to a remote address
     pub fn connect(&mut self) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERClient connecting ...");
 
@@ -161,7 +161,7 @@ impl WATERClient {
         Ok(())
     }
 
-    /// `associate` is the entry point for `Relay` to associate with a remote addr
+    /// `associate` is the function for `Relay` to associate a remote connection
     pub fn associate(&mut self) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERClient relaying ...");
 
@@ -176,8 +176,8 @@ impl WATERClient {
         Ok(())
     }
 
-    /// `accept` is the entry point for `Listener` to accept a connection
-    /// called after `listen`
+    /// `accept` is the function for `Listener` to accept a connection
+    /// called after `listen()`
     pub fn accept(&mut self) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERClient accepting ...");
 
@@ -192,8 +192,8 @@ impl WATERClient {
         Ok(())
     }
 
-    /// `run_worker` is the entry point for `Runner` to run the entry_fn(a worker in WATM) in a separate thread
-    /// it will return a `JoinHandle` for the caller to manage the thread -- used by v0 currently
+    /// `run_worker` is the function to run the entry_fn(a worker in WATM) in a separate thread and return the thread handle
+    /// it will return a `JoinHandle` for the caller to manage the thread -- used by v0_plus
     pub fn run_worker(
         &mut self,
     ) -> Result<std::thread::JoinHandle<Result<(), anyhow::Error>>, anyhow::Error> {
@@ -207,7 +207,7 @@ impl WATERClient {
         }
     }
 
-    /// `execute` is the entry point for `Runner` to run the entry_fn(a worker in WATM) in the current thread
+    /// `execute` is the function to run the entry_fn(a worker in WATM) in the current thread
     /// -- replace the thread running Host when running it <- used by v1 currently
     pub fn execute(&mut self) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERClient Executing ...");
@@ -229,7 +229,7 @@ impl WATERClient {
         Ok(())
     }
 
-    /// `cancel_with` is the function to set the pipe for canceling later -- v0
+    /// `cancel_with` is the function to set the cancel pipe for exiting later -- v0_plus
     pub fn cancel_with(&mut self) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERClient cancel_with ...");
 
@@ -251,7 +251,7 @@ impl WATERClient {
         Ok(())
     }
 
-    /// `cancel` is the function to cancel the thread running the entry_fn -- v0
+    /// `cancel` is the function to send thru the cancel_pipe and let the thread running the worker to exit -- v0_plus
     pub fn cancel(&mut self) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERClient canceling ...");
 
