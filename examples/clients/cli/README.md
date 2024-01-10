@@ -1,7 +1,5 @@
 # cli tool for using `water` library
 
-🚧 Currently under reimplementation 🚧
-
 ## How to run?
 To run the Host program + WASM:
 ```shell
