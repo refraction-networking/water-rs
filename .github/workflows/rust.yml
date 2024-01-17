@@ -32,7 +32,7 @@ jobs:
     - name: Lint
       run: cargo clippy --workspace --all-targets --verbose --all-features
 
-  build:
+  test_amd64:
     name: Test and Build WASM
     needs: format
     # needs: [format, lint]
@@ -68,5 +68,52 @@ jobs:
       env:
         RUSTFLAGS: --cfg tokio_unstable
 
+    - name: Test
+      run: cargo test --verbose --workspace --all-features
+
+  test_linux-non-amd64:
+    name: rust (linux/${{ matrix.arch }})
+    needs: test_amd64
+    strategy:
+      matrix:
+        rust: [ "stable" ] # specify the Rust versions you want to test
+        arch: [ "arm64", "riscv64" ]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: ${{ matrix.rust }}
+        override: true
+    - name: Install QEMU
+      uses: docker/setup-qemu-action@v3
+    - name: Build wasm32-wasi Target
+      run: bash ./scripts/build_wasm_targets.sh
+      env:
+        RUSTFLAGS: --cfg tokio_unstable
+    - name: Test
+      run: cargo test --verbose --workspace --all-features
+  
+  test_macos-arm64:
+    name: rust (macos/arm64)
+    needs: test_amd64
+    strategy:
+      matrix:
+        rust: [ "stable" ]
+    runs-on: flyci-macos-large-latest-m1 # generously provided by www.flyci.net
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: ${{ matrix.rust }}
+        override: true
+    - name: Build wasm32-wasi Target
+      run: bash ./scripts/build_wasm_targets.sh
+      env:
+        RUSTFLAGS: --cfg tokio_unstable
     - name: Test
       run: cargo test --verbose --workspace --all-features
