@@ -46,7 +46,7 @@ use config::*;
 use crypto_io::*;
 use socks5::*;
 use utils::*;
-use water_wasm::*;
+use water_watm::*;
 
 // =================== SHADOWSOCKS_CRYPTO ===================
 use shadowsocks_crypto::{v1::random_iv_or_salt, v1::Cipher, CipherKind};

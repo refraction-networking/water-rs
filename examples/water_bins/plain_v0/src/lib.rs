@@ -1,4 +1,4 @@
-use water_wasm_v0::*;
+use water_watm_v0::*;
 
 use lazy_static::lazy_static;
 use std::ops::DerefMut;
