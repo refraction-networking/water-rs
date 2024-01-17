@@ -72,12 +72,12 @@ jobs:
       run: cargo test --verbose --workspace --all-features
 
   test_linux-non-amd64:
-    name: rust (linux/${{ matrix.arch }})
-    needs: test_amd64
+    name: rust (linux/${{ matrix.target }})
+    # needs: test_amd64
     strategy:
       matrix:
         rust: [ "stable" ] # specify the Rust versions you want to test
-        arch: [ "arm64", "riscv64" ]
+        target: [ "aarch64", "riscv64gc" ]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -86,19 +86,23 @@ jobs:
       with:
         profile: minimal
         toolchain: ${{ matrix.rust }}
+        target: ${{ matrix.target }}
         override: true
+    # install wasm32-wasi target
+    - name: Add wasm32-wasi target
+      run: rustup target add wasm32-wasi
     - name: Install QEMU
       uses: docker/setup-qemu-action@v3
-    - name: Build wasm32-wasi Target
-      run: bash ./scripts/build_wasm_targets.sh
-      env:
-        RUSTFLAGS: --cfg tokio_unstable
     - name: Test
-      run: cargo test --verbose --workspace --all-features
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: true
+        command: test
+        args: --target ${{ matrix.target }}-unknown-linux-gnu --verbose --workspace --all-features
   
   test_macos-arm64:
     name: rust (macos/arm64)
-    needs: test_amd64
+    # needs: test_amd64
     strategy:
       matrix:
         rust: [ "stable" ]
@@ -111,9 +115,8 @@ jobs:
         profile: minimal
         toolchain: ${{ matrix.rust }}
         override: true
-    - name: Build wasm32-wasi Target
-      run: bash ./scripts/build_wasm_targets.sh
-      env:
-        RUSTFLAGS: --cfg tokio_unstable
+    # install wasm32-wasi target
+    - name: Add wasm32-wasi target
+      run: rustup target add wasm32-wasi
     - name: Test
       run: cargo test --verbose --workspace --all-features
