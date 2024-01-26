@@ -38,4 +38,4 @@ futures = "0.3.28"
 pin-project = "1.1.2"
 
 # water wasm lib import
-water-wasm = { path = "../../../crates/wasm/", version = "0.1.0" }
+water-watm = { path = "../../../crates/watm/", version = "0.1.0" }

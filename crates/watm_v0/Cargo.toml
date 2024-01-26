@@ -1,17 +1,17 @@
 [package]
-name = "water-wasm"
+name = "water-watm-v0"
 version = "0.1.0"
 authors.workspace = true
 description.workspace = true
 edition.workspace = true
 
 [lib]
-name = "water_wasm"
+name = "water_watm_v0"
 path = "src/lib.rs"
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
-tokio = { version = "1.24.2", default-features = false, features = ["net", "rt", "macros", "io-util", "io-std", "time", "sync"] }
+tokio = { version = "1.33.0", default-features = false, features = ["fs", "net", "rt", "macros", "io-util", "io-std", "time", "sync"] }
 tokio-util = { version = "0.7.1", features = ["codec"] }
 
 serde = { version = "1.0", features = ["derive"] }
@@ -25,3 +25,4 @@ toml = "0.5.9"
 lazy_static = "1.4"
 url = { version = "2.2.2", features = ["serde"] }
 libc = "0.2.147"
+

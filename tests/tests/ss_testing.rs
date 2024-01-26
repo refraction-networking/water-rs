@@ -146,6 +146,9 @@ async fn wasm_managed_shadowsocks_async() -> Result<(), Box<dyn std::error::Erro
 
     // ==== setup WASM Shadowsocks client ====
     let conf = config::WATERConfig::init(
+        // Source code of ss_client_wasm.wasm:
+        // https://github.com/erikziyunchi/water-rs/tree/main/examples/water_bins/ss_client_wasm_v1
+        //
         String::from("./test_wasm/ss_client_wasm.wasm"),
         String::from("v1_listen"),
         // Currently using a temp file to pass config to WASM client
@@ -223,7 +226,7 @@ async fn wasm_managed_shadowsocks_bypass_async() -> Result<(), Box<dyn std::erro
 
     let mut water_client = runtime::client::WATERClient::new(conf).unwrap();
 
-    // ==== spawn a thread to run WASM Shadowsocks client ====
+    // spawn a thread to run WASM Shadowsocks client
     thread::spawn(move || {
         water_client.execute().unwrap();
     });
@@ -236,7 +239,6 @@ async fn wasm_managed_shadowsocks_bypass_async() -> Result<(), Box<dyn std::erro
     // ==== test WASM Shadowsocks client ====
     // currently only support connect by ip,
     // get the ip of detectportal.firefox.com
-
     let mut addrs = "detectportal.firefox.com:80".to_socket_addrs()?;
     let ip = addrs
         .find(|addr| addr.is_ipv4())
@@ -263,44 +265,6 @@ async fn wasm_managed_shadowsocks_bypass_async() -> Result<(), Box<dyn std::erro
 
     let http_status = b"HTTP/1.0 200 OK\r\n";
     assert!(buf.starts_with(http_status));
-
-    Ok(())
-}
-
-// Here is a test that runs the ss_client that has to be ended with signal
-// #[test]
-fn execute_wasm_shadowsocks_client() -> Result<(), Box<dyn std::error::Error>> {
-    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
-
-    let cfg_str = r#"
-	{
-		"remote_address": "138.197.211.159",
-		"remote_port": 5201,
-		"local_address": "127.0.0.1",
-		"local_port": 8080,
-        "bypass": true
-	}
-	"#;
-
-    // Create a directory inside of `std::env::temp_dir()`.
-    let dir = tempdir()?;
-    let file_path = dir.path().join("temp-config.txt");
-    let mut file = File::create(&file_path)?;
-    writeln!(file, "{}", cfg_str)?;
-
-    // ==== setup WASM Shadowsocks client ====
-    let conf = config::WATERConfig::init(
-        String::from("./test_wasm/ss_client_wasm.wasm"),
-        String::from("v1_listen"),
-        String::from(file_path.to_string_lossy()),
-        config::WaterBinType::Runner,
-        false,
-    )
-    .unwrap();
-
-    let mut water_client = runtime::client::WATERClient::new(conf).unwrap();
-
-    water_client.execute().unwrap();
 
     Ok(())
 }

@@ -32,7 +32,7 @@ jobs:
     - name: Lint
       run: cargo clippy --workspace --all-targets --verbose --all-features
 
-  build:
+  test_amd64:
     name: Test and Build WASM
     needs: format
     # needs: [format, lint]

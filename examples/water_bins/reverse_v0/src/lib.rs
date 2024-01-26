@@ -1,4 +1,4 @@
-use water_wasm_v0::*;
+use water_watm_v0::*;
 
 use lazy_static::lazy_static;
 use std::ops::DerefMut;
@@ -10,6 +10,8 @@ use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
 };
 use v0plus::ConnPair;
+
+use tracing::Level;
 
 const READ_BUFFER_SIZE: usize = 1024; // 1KB is shorter than common MTU but longer than common TCP MSS
 
@@ -28,7 +30,11 @@ pub static VERSION: i32 = v0plus::VERSION;
 
 // version-independent API
 #[export_name = "_water_init"]
-pub fn _init() -> i32 {
+pub fn _init(debug: bool) -> i32 {
+    if debug {
+        tracing_subscriber::fmt().with_max_level(Level::INFO).init();
+    }
+
     // do all the initializing work here AND pull config from host
     sleep(Duration::from_millis(10)); // sleep for 10ms
     error::Error::None.i32()

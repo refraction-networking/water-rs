@@ -6,7 +6,7 @@ use bincode::{self};
 use lazy_static::lazy_static;
 use tracing::{info, Level};
 
-use water_wasm::*;
+use water_watm::*;
 
 pub mod async_socks5_listener;
 

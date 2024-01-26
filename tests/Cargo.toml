@@ -8,7 +8,7 @@ publish = false
 
 
 [dev-dependencies]
-water-wasm = { path = "../crates/wasm" }
+water-watm = { path = "../crates/watm" }
 water = { path = "../crates/water" }
 
 tracing = "0.1"

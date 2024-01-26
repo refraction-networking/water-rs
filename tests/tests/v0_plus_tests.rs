@@ -28,8 +28,7 @@ fn test_cross_lang_wasm_dialer() -> Result<(), Box<dyn std::error::Error>> {
 		"remote_address": "127.0.0.1",
 		"remote_port": 8080,
 		"local_address": "127.0.0.1",
-		"local_port": 8088,
-        "bypass": false
+		"local_port": 8088
 	}
 	"#;
     // Create a directory inside of `std::env::temp_dir()`.
@@ -40,7 +39,6 @@ fn test_cross_lang_wasm_dialer() -> Result<(), Box<dyn std::error::Error>> {
 
     let test_message = b"hello";
     let handle = std::thread::spawn(|| {
-        // let listener = TcpListener::bind("127.0.0.1:8080").await.unwrap();
         let listener = TcpListener::bind(("127.0.0.1", 8080)).unwrap();
         let (mut socket, _) = listener.accept().unwrap();
         let mut buf = [0; 1024];
@@ -60,8 +58,8 @@ fn test_cross_lang_wasm_dialer() -> Result<(), Box<dyn std::error::Error>> {
         // More details for the Go-side of running plain.wasm check here:
         // https://github.com/gaukas/water/tree/master/examples/v0/plain
         //
-        // More details for the implementation of plain.wasm check this PR:
-        // https://github.com/erikziyunchi/water-rs/pull/10
+        // Source code of plain.wasm:
+        // https://github.com/erikziyunchi/water-rs/tree/main/examples/water_bins/plain_v0
         //
         String::from("./test_wasm/plain.wasm"),
         String::from("_water_worker"),
@@ -110,8 +108,7 @@ fn test_cross_lang_wasm_listener() -> Result<(), Box<dyn std::error::Error>> {
 		"remote_address": "127.0.0.1",
 		"remote_port": 8088,
 		"local_address": "127.0.0.1",
-		"local_port": 8082,
-        "bypass": false
+		"local_port": 8082
 	}
 	"#;
     // Create a directory inside of `std::env::temp_dir()`.
@@ -123,13 +120,6 @@ fn test_cross_lang_wasm_listener() -> Result<(), Box<dyn std::error::Error>> {
     let test_message = b"hello";
 
     let conf = config::WATERConfig::init(
-        // plain.wasm is in v0 and fully compatible with the Go engine
-        // More details for the Go-side of running plain.wasm check here:
-        // https://github.com/gaukas/water/tree/master/examples/v0/plain
-        //
-        // More details for the implementation of plain.wasm check this PR:
-        // https://github.com/erikziyunchi/water-rs/pull/10
-        //
         String::from("./test_wasm/plain.wasm"),
         String::from("_water_worker"),
         String::from(file_path.to_string_lossy()),
@@ -185,6 +175,7 @@ fn test_cross_lang_wasm_listener() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// Testing the listener mode but with multiple incoming connections
 #[test]
 fn test_cross_lang_wasm_multi_listener() -> Result<(), Box<dyn std::error::Error>> {
     let cfg_str = r#"
@@ -192,8 +183,7 @@ fn test_cross_lang_wasm_multi_listener() -> Result<(), Box<dyn std::error::Error
 		"remote_address": "127.0.0.1",
 		"remote_port": 8088,
 		"local_address": "127.0.0.1",
-		"local_port": 10088,
-        "bypass": false
+		"local_port": 10088
 	}
 	"#;
     // Create a directory inside of `std::env::temp_dir()`.
@@ -203,13 +193,6 @@ fn test_cross_lang_wasm_multi_listener() -> Result<(), Box<dyn std::error::Error
     writeln!(file, "{}", cfg_str)?;
 
     let conf = config::WATERConfig::init(
-        // plain.wasm is in v0 and fully compatible with the Go engine
-        // More details for the Go-side of running plain.wasm check here:
-        // https://github.com/gaukas/water/tree/master/examples/v0/plain
-        //
-        // More details for the implementation of plain.wasm check this PR:
-        // https://github.com/erikziyunchi/water-rs/pull/10
-        //
         String::from("./test_wasm/plain.wasm"),
         String::from("_water_worker"),
         String::from(file_path.to_string_lossy()),
