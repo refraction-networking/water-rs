@@ -12,26 +12,29 @@
     </div>
 </div>
 
-The Go implementation of the runtime library can be found in [water-go](https://github.com/gaukas/water). 
+The Go implementation of the runtime library can be found in [water-go](https://github.com/gaukas/water). We now also support building WATM in Go, please refer to [watm](https://github.com/gaukas/watm) for examples and helper libraries interfacing Pluggable Transports-like interfaces. Official Go compiler is currently not supported ([watm#4](https://github.com/gaukas/watm/issues/4)).
 
-### Citation Information
+### Cite our work
 
-If you quoted or used our work, please cite our paper [Just add WATER: WebAssembly-based Circumvention Transports](https://arxiv.org/pdf/2312.00163.pdf) in your work.
+If you quoted or used our work in your own project/paper/research, please cite our paper [Just add WATER: WebAssembly-based Circumvention Transports](https://arxiv.org/pdf/2312.00163.pdf).
 
 <details>
   <summary>BibTeX</summary>
     
   ```bibtex
-  @misc{chi2023just,
-    title={Just add WATER: WebAssembly-based Circumvention Transports}, 
-    author={Erik Chi and Gaukas Wang and J. Alex Halderman and Eric Wustrow and Jack Wampler},
-    year={2023},
-    eprint={2312.00163},
-    archivePrefix={arXiv},
-    primaryClass={cs.CR}
+  @inproceedings{water-foci24,
+	  author = {Chi, Erik and Wang, Gaukas and Halderman, J. Alex and Wustrow, Eric and Wampler, Jack},
+	  year = {2024},
+	  month = {02},
+	  title = {Just add {WATER}: {WebAssembly}-based Circumvention Transports},
+	  address = {Virtual Event},
+	  series = {FOCI '24},
+	  booktitle = {Free and Open Communications on the Internet},
   }
   ```
 </details>
+
+**Update**: our paper has been accepted by FOCI and will appear at [FOCI 2024](https://foci.community/foci24.html) on Feb 19, 2024!
 
 ## Be Water
 
