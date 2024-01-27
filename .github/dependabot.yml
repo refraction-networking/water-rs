@@ -1,0 +1,20 @@
+version: 2
+updates:
+- package-ecosystem: cargo
+  directory: "/"
+  schedule:
+    interval: weekly
+  open-pull-requests-limit: 5
+  ignore:
+  - dependency-name: wasmtime
+    versions:
+    - "17.0.0"
+  - dependency-name: wasmtime-wasi
+    versions:
+    - "17.0.0"
+  - dependency-name: wasi-common
+    versions:
+    - "17.0.0"
+  - dependency-name: cap-std
+    versions:
+    - "2.0.0"
