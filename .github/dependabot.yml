@@ -4,17 +4,17 @@ updates:
   directory: "/"
   schedule:
     interval: weekly
-  open-pull-requests-limit: 5
+  open-pull-requests-limit: 10
   ignore:
   - dependency-name: wasmtime
     versions:
-    - "17.0.0"
+    - 17.0.0
   - dependency-name: wasmtime-wasi
     versions:
-    - "17.0.0"
+    - 17.0.0
   - dependency-name: wasi-common
     versions:
-    - "17.0.0"
+    - 17.0.0
   - dependency-name: cap-std
     versions:
-    - "2.0.0"
+    - 2.0.0
