@@ -11,7 +11,7 @@ use tokio::{
 };
 use v0plus::ConnPair;
 
-use tracing::{info, Level};
+// use tracing::{info, Level};
 
 const READ_BUFFER_SIZE: usize = 1024; // 1KB is shorter than common MTU but longer than common TCP MSS
 
@@ -30,11 +30,7 @@ pub static VERSION: i32 = v0plus::VERSION;
 
 // version-independent API
 #[export_name = "_water_init"]
-pub fn _init(debug: bool) -> i32 {
-    if debug {
-        tracing_subscriber::fmt().with_max_level(Level::INFO).init();
-    }
-
+pub fn _init() -> i32 {
     // do all the initializing work here AND pull config from host
     sleep(Duration::from_millis(10)); // sleep for 10ms
     error::Error::None.i32()
@@ -149,7 +145,7 @@ pub fn _cancel_with(fd: i32) -> i32 {
 /// WASM Entry point here
 #[export_name = "_water_worker"]
 pub fn _worker() -> i32 {
-    info!("[WATM plain] worker: start");
+    println!("[WATM plain] worker: start");
 
     // borrow CANCEL as &mut AsyncFdConn
     let mut cancel = CANCEL.lock().unwrap();
@@ -222,7 +218,7 @@ async fn bidi_worker(
     src: &mut common::AsyncFdConn,
     cancel: &mut common::AsyncFdConn,
 ) -> std::io::Result<()> {
-    info!("[WATM plain] bidi_worker: start");
+    println!("[WATM plain] bidi_worker: start");
 
     // upgrade to AsyncFdConn
     dst.tokio_upgrade().expect("dst upgrade failed");
@@ -252,7 +248,7 @@ async fn bidi_worker(
                             return Err(e);
                         }
 
-                        info!("[WATM plain] dst read {:?}", &dst_buf[0..n]);
+                        println!("[WATM plain] dst read {:?}", &dst_buf[0..n]);
                     }
                     Err(e) => {
                         println!("Error reading from dst: {:?}", e);
@@ -271,7 +267,7 @@ async fn bidi_worker(
                             return Err(e);
                         }
 
-                        info!("[WATM plain] src read {:?}", &src_buf[0..n]);
+                        println!("[WATM plain] src read {:?}", &src_buf[0..n]);
                     }
                     Err(e) => {
                         println!("Error reading from src: {:?}", e);

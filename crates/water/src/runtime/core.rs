@@ -219,7 +219,7 @@ impl H2O<Host> {
     }
 
     /// This function is called when the host wants to call _init() in WASM
-    pub fn _init(&mut self, debug: bool) -> Result<(), anyhow::Error> {
+    pub fn _init(&mut self, _debug: bool) -> Result<(), anyhow::Error> {
         info!("[HOST] WATERCore calling _init from WASM...");
 
         let store_lock_result = self.store.lock();
@@ -235,9 +235,8 @@ impl H2O<Host> {
         };
 
         // check if we need to pass in any arguments / configs later
-        let params = vec![Val::I32(debug as i32); init_fn.ty(&*store).params().len()];
         let mut res = vec![Val::I64(0); init_fn.ty(&*store).results().len()];
-        match init_fn.call(&mut *store, &params, &mut res) {
+        match init_fn.call(&mut *store, &[], &mut res) {
             Ok(_) => {}
             Err(e) => return Err(anyhow::Error::msg(format!("init function failed: {}", e))),
         }
