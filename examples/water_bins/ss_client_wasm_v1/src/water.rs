@@ -4,21 +4,10 @@ use bytes::{BufMut, BytesMut};
 use shadowsocks_crypto::v1::openssl_bytes_to_key;
 use std::sync::Arc;
 
-#[cfg(target_family = "wasm")]
 #[export_name = "_water_init"]
-pub fn _init(debug: bool) {
-    if debug {
-        tracing_subscriber::fmt().with_max_level(Level::INFO).init();
-    }
-
-    info!("[WASM] running in _init");
-}
-
-#[cfg(not(target_family = "wasm"))]
-pub fn _init(debug: bool) {
-    if debug {
-        tracing_subscriber::fmt().with_max_level(Level::INFO).init();
-    }
+pub fn _init() {
+    // default to have logging enabled
+    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
 
     info!("[WASM] running in _init");
 }

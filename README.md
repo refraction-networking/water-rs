@@ -46,10 +46,11 @@ If you quoted or used our work in your own project/paper/research, please cite o
 
 The repo contains 2 main components:
 1. A Rust crate [`water`](https://github.com/erikziyunchi/water-rs/tree/main/crates/water) runtime library used to interact with `.wasm` WebAssembly Transport Modules(WATM).
-2. A Rust crate [`water_wasm`](https://github.com/erikziyunchi/water-rs/tree/main/crates/wasm) for WATM-development where developers can easily create their own `.wasm`.
+2. A Rust crate [`watm_v0`](https://github.com/erikziyunchi/water-rs/tree/main/crates/watm_v0) for the v0 WATM-development where developers can easily create their own `.wasm` (the general version of `watm` is still under development).
+
 
 Also include examples for demonstration of usage:
-1. A standalone cli tool which can be used to load a `.wasm` WATM directly and run it. See [water-rs/tree/main/examples/clients/cli](https://github.com/erikziyunchi/water-rs/tree/main/examples/clients/cli).
+1. ⭐ A standalone [`cli`](https://github.com/erikziyunchi/water-rs/tree/main/examples/clients/cli) tool which is compatible with both `v0` and `v1_preview`, and can run all different roles with all of our example WATM binaries.
 2. A few examples WATM implementations with `water_wasm` crate, see [water-rs/tree/main/examples/water_bins](https://github.com/erikziyunchi/water-rs/tree/main/examples/water_bins).
 3. Examples of using the above WATM examples with our `water` library, see [tests](https://github.com/erikziyunchi/water-rs/tree/main/tests/tests) for usage.
 
