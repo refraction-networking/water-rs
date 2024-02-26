@@ -10,3 +10,4 @@ updates:
   - dependency-name: wasmtime-wasi
   - dependency-name: wasi-common
   - dependency-name: cap-std
+  - dependency-name: wasmtime-wasi-threads
