@@ -56,10 +56,10 @@ fn test_cross_lang_wasm_dialer() -> Result<(), Box<dyn std::error::Error>> {
     let conf = config::WATERConfig::init(
         // plain.wasm is in v0 and fully compatible with the Go engine
         // More details for the Go-side of running plain.wasm check here:
-        // https://github.com/gaukas/water/tree/master/examples/v0/plain
+        // https://github.com/refraction-networking/water/tree/master/examples/v0/plain
         //
         // Source code of plain.wasm:
-        // https://github.com/erikziyunchi/water-rs/tree/main/examples/water_bins/plain_v0
+        // https://github.com/refraction-networking/water-rs/tree/main/examples/water_bins/plain_v0
         //
         String::from("./test_wasm/plain.wasm"),
         String::from("_water_worker"),

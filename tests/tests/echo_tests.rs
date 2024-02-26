@@ -45,7 +45,7 @@ fn test_echo() -> Result<(), Box<dyn std::error::Error>> {
 
     let conf = config::WATERConfig::init(
         // Source code of echo_client.wasm:
-        // https://github.com/erikziyunchi/water-rs/tree/main/examples/water_bins/echo_client
+        // https://github.com/refraction-networking/water-rs/tree/main/examples/water_bins/echo_client
         //
         String::from("./test_wasm/echo_client.wasm"),
         String::from("_water_init"),

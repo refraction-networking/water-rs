@@ -2,7 +2,7 @@
 //!
 //! Passed as command line arguments when used with cli tool
 //!
-//! Will have the similar feat as required in [issue#19](https://github.com/gaukas/water/issues/19) on the go-side.
+//! Will have the similar feat as required in [issue#19](https://github.com/refraction-networking/water/issues/19) on the go-side.
 
 pub mod wasm_shared_config;
 

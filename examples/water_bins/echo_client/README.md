@@ -3,7 +3,7 @@
 It uses the `water-wasm-crate` library and is able to run as a `Dialer` or `Listener` Role. It is currently implemented with `v1_preview` where it has the capability of managing connections inside it (tell the Host which `address:port` it `dial()` to / `listen()` on).
 
 ## How to run?
-You can also find a full runnable test for this example with using our water-host library [here](https://github.com/erikziyunchi/water-rs/blob/main/tests/tests/echo_tests.rs).
+You can also find a full runnable test for this example with using our water-host library [here](https://github.com/refraction-networking/water-rs/blob/main/tests/tests/echo_tests.rs).
 
 You can config it as the following:
 ```json
