@@ -17,19 +17,19 @@ The Go implementation of the runtime library can be found in [water-go](https://
 
 ### Cite our work
 
-If you quoted or used our work in your own project/paper/research, please cite our paper [Just add WATER: WebAssembly-based Circumvention Transports](https://www.petsymposium.org/foci/2024/foci-2024-0003.pdf).
+If you quoted or used our work in your own project/paper/research, please cite our paper [Just add WATER: WebAssembly-based Circumvention Transports](https://www.petsymposium.org/foci/2024/foci-2024-0003.pdf), which is published in the proceedings of Free and Open Communications on the Internet (FOCI) in 2024 issue 1, pages 22-28.
 
 <details>
   <summary>BibTeX</summary>
     
   ```bibtex
   @inproceedings{water-foci24,
-	  author = {Erik Chi and Gaukas Wang and J. Alex Halderman and Eric Wustrow and Jack Wampler},
-	  title = {Just add {WATER}: {WebAssembly}-based Circumvention Transports},
-	  booktitle = {Free and Open Communications on the Internet},
+      author = {Erik Chi and Gaukas Wang and J. Alex Halderman and Eric Wustrow and Jack Wampler},
+      title = {Just add {WATER}: {WebAssembly}-based Circumvention Transports},
+      booktitle = {Free and Open Communications on the Internet},
       publisher = {},
-	  year = {2024},
-	  url = {https://www.petsymposium.org/foci/2024/foci-2024-0003.pdf},
+      year = {2024},
+      url = {https://www.petsymposium.org/foci/2024/foci-2024-0003.pdf},
   }
   ```
 </details>
