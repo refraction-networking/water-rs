@@ -147,7 +147,7 @@ async fn wasm_managed_shadowsocks_async() -> Result<(), Box<dyn std::error::Erro
     // ==== setup WASM Shadowsocks client ====
     let conf = config::WATERConfig::init(
         // Source code of ss_client_wasm.wasm:
-        // https://github.com/erikziyunchi/water-rs/tree/main/examples/water_bins/ss_client_wasm_v1
+        // https://github.com/refraction-networking/water-rs/tree/main/examples/water_bins/ss_client_wasm_v1
         //
         String::from("./test_wasm/ss_client_wasm.wasm"),
         String::from("v1_listen"),
