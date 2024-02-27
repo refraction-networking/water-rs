@@ -13,7 +13,7 @@
     </div>
 </div>
 
-The Go implementation of the runtime library can be found in [water-go](https://github.com/refraction-networking/water). We now also support building WATM in Go, please refer to [watm](https://github.com/refraction-networking/watm) for examples and helper libraries interfacing Pluggable Transports-like interfaces. Official Go compiler is currently not supported ([watm#4](https://github.com/gaukas/watm/issues/4)).
+The Go implementation of the runtime library can be found in [water-go](https://github.com/refraction-networking/water). We now also support building WATM in Go, please refer to [watm](https://github.com/refraction-networking/watm) for examples and helper libraries interfacing Pluggable Transports-like interfaces. Official Go compiler is currently not supported until further notice.
 
 ### Cite our work
 
