@@ -46,6 +46,13 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Install CMake & LLVM
+      if: matrix.os == 'macos-12'
+      run: |
+        brew update
+        brew install llvm
+        brew install cmake
+
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
