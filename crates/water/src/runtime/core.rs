@@ -9,6 +9,7 @@ use crate::runtime::*;
 #[derive(Default, Clone)]
 pub struct Host {
     pub preview1_ctx: Option<wasmtime_wasi::WasiCtx>,
+    #[cfg(feature = "multithread")]
     pub wasi_threads: Option<Arc<WasiThreadsCtx<Host>>>,
 }
 
@@ -37,10 +38,13 @@ impl H2O<Host> {
         }
 
         let engine = Engine::new(&wasm_config)?;
+        
+        let module = Module::from_file(&engine, &conf.filepath)?;
+        
         let linker: Linker<Host> = Linker::new(&engine);
 
-        let module = Module::from_file(&engine, &conf.filepath)?;
-
+        // linker.allow_unknown_exports(true);
+        
         let host = Host::default();
         let store = Store::new(&engine, host);
 
@@ -143,7 +147,29 @@ impl H2O<Host> {
             version_common::funcs::export_config(&mut linker, conf.config_wasm.clone())?;
         }
 
+        // linker.define_unknown_imports_as_traps(&module)?;
+
         let instance = linker.instantiate(&mut store, &module)?;
+
+        // call _start function explicitly if there is one exported from the WATM module
+        let func = instance
+            .get_func(&mut store, "_start");
+
+        match func {
+            Some(func) => {
+                let mut res = vec![Val::null(); func.ty(&store).results().len()];
+                match func.call(&mut store, &[], &mut res) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        return Err(anyhow::Error::msg(format!(
+                            "failed to call _start function: {}",
+                            e
+                        )))
+                    }
+                }
+            }
+            None => {}
+        }
 
         Ok(H2O {
             version: match version {
