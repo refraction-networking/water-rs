@@ -34,7 +34,6 @@ use tracing::{debug, info};
 use wasi_common::{file::FileAccessMode, WasiCtx, WasiFile};
 use wasmtime::*;
 use wasmtime_wasi::sync::{Dir, WasiCtxBuilder};
-use wasmtime_wasi_threads::WasiThreadsCtx;
 
 // =================== CURRENT CRATE IMPORTS ===================
 use crate::{
